@@ -41,6 +41,9 @@ namespace ChainTrapper
         private Texture2D mArrowTexture;
         private World mPhysicsWorld;
 
+        private RenderTarget2D mUpperEdgeTexture;
+        private Fixture mUpperFixture;
+
         public ChainTrapperGame()
         {
             mGraphics = new GraphicsDeviceManager(this);
@@ -86,8 +89,8 @@ namespace ChainTrapper
                 Vertex2 = new Vec2(ScreenWidth / (float)Constants.PixelPerMeter, 0),
                 Restitution = 0.6f
             };
-            upperBody.CreateFixture(upperFixtureDef);
-            
+            mUpperFixture = upperBody.CreateFixture(upperFixtureDef);
+            //upperFixture.UserData = mUpperEdgeTexture;
             
             BodyDef lowerBound = new BodyDef() {Position = Vec2.Zero, FixedRotation = true};
             Body lowerBody = mPhysicsWorld.CreateBody(lowerBound);
@@ -181,6 +184,8 @@ namespace ChainTrapper
                 mEnemies.Add(enemy);
                 mAllGameObjects.Add(enemy);
             }
+
+            mUpperEdgeTexture = new RenderTarget2D(mGraphics.GraphicsDevice, ScreenWidth, Constants.PixelPerMeter);
         }
 
         protected override void Update(GameTime gameTime)
@@ -330,7 +335,9 @@ namespace ChainTrapper
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
             mSpriteBatch.Begin();
-
+            
+            mSpriteBatch.Draw(mUpperEdgeTexture, Vector2.Zero, Color.White);
+            
             foreach (var gameObject in mAllGameObjects)
             {
                 gameObject.Draw(mSpriteBatch);
@@ -373,15 +380,45 @@ namespace ChainTrapper
 
             if (go1 is Projectile && !(go2 is Player))
             {
+                if (contact.FixtureB == mUpperFixture)
+                {
+                    HitUpperEdge(contact);
+                }
                 go1.Destroy();
             }
 
             if (go2 is Projectile && !(go1 is Player))
             {
+                if (contact.FixtureA == mUpperFixture)
+                {
+                    HitUpperEdge(contact);
+                }
                 go2.Destroy();
             }
         }
 
+        private void HitUpperEdge(Contact contact)
+        {
+            Color[] pixelData = new Color[mArrowTexture.Width * mArrowTexture.Height];
+            mArrowTexture.GetData(pixelData);
+            contact.GetWorldManifold(out var worldManifold);
+            var firstContact = worldManifold.Points[0] * Constants.PixelPerMeter;
+            Debug("Contact", firstContact.X + "/" + firstContact.Y);
+            mUpperEdgeTexture.SetData(0, new Rectangle((int) (firstContact.X - 16), 0, 2, 32), pixelData, 0, pixelData.Length);
+        }
+
+        private void Debug(string key, string text)
+        {
+            if (mDebugInfo.ContainsKey(key))
+            {
+                mDebugInfo[key] = text;
+            }
+            else
+            {
+                mDebugInfo.Add(key, text);
+            }
+        }
+        
         public void EndContact(Contact contact)
         {
             
