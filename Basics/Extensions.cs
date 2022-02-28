@@ -1,6 +1,7 @@
 ﻿using System;
 using Box2DX.Common;
 using Microsoft.Xna.Framework;
+using Math = System.Math;
 
 namespace ChainTrapper
 {
@@ -42,6 +43,16 @@ namespace ChainTrapper
         public static int RandomInt(int maxValue)
         {
             return sRandom.Next(maxValue);
+        }
+
+        public static int RotatePixelX(int x, int y, int a, int b, float angle)
+        {
+            return (int)((x - a) * Math.Cos(angle) + (b - y) * Math.Sin(angle) + a);
+        }
+        
+        public static int RotatePixelY(int x, int y, int a, int b, float angle)
+        {
+            return (int)((x - a) * Math.Sin(angle) + (y - b) * Math.Cos(angle) + b);
         }
     }
 }

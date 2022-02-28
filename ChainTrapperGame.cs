@@ -10,6 +10,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Color = Microsoft.Xna.Framework.Color;
+using Math = System.Math;
 
 namespace ChainTrapper
 {
@@ -165,12 +166,18 @@ namespace ChainTrapper
             }
             mTrapTexture.SetData<Color>(yellowPixels);
 
-            mArrowTexture = new Texture2D(mGraphics.GraphicsDevice, unitSize, 2);
-            Color[] blackPixels = new Color[2 * unitSize];
-            for (int i = 0; i < 2 * unitSize; i++)
+            mArrowTexture = new Texture2D(mGraphics.GraphicsDevice, unitSize, unitSize);
+            Color[] blackPixels = new Color[unitSize * unitSize];
+            for (int x = 0; x < unitSize; x++)
             {
-                blackPixels[i] = Color.Black;
+                for (int y = 0; y < unitSize; y++)
+                {
+                    int i = y * unitSize + x;
+                    var color = (y == unitSize / 2) || (y == unitSize / 2 - 1) ? Color.Black : Color.Transparent;
+                    blackPixels[i] = color;
+                }
             }
+
             mArrowTexture.SetData<Color>(blackPixels);
 
             mPlayer = new Player(mPhysicsWorld, new Vector2(100, 100), texture);
@@ -382,7 +389,7 @@ namespace ChainTrapper
             {
                 if (contact.FixtureB == mUpperFixture)
                 {
-                    HitUpperEdge(contact);
+                    HitUpperEdge(go1, contact);
                 }
                 go1.Destroy();
             }
@@ -391,20 +398,39 @@ namespace ChainTrapper
             {
                 if (contact.FixtureA == mUpperFixture)
                 {
-                    HitUpperEdge(contact);
+                    HitUpperEdge(go2, contact);
                 }
                 go2.Destroy();
             }
         }
 
-        private void HitUpperEdge(Contact contact)
+        private void HitUpperEdge(GameObject gameObject, Contact contact)
         {
-            Color[] pixelData = new Color[mArrowTexture.Width * mArrowTexture.Height];
+            var rotation = gameObject.Rotation;
+            Color[] pixelData = new Color[Constants.PixelPerMeter * Constants.PixelPerMeter];
+            Color[] rotatedPixelData = new Color[Constants.PixelPerMeter * Constants.PixelPerMeter];
             mArrowTexture.GetData(pixelData);
             contact.GetWorldManifold(out var worldManifold);
             var firstContact = worldManifold.Points[0] * Constants.PixelPerMeter;
             Debug("Contact", firstContact.X + "/" + firstContact.Y);
-            mUpperEdgeTexture.SetData(0, new Rectangle((int) (firstContact.X - 16), 0, 2, 32), pixelData, 0, pixelData.Length);
+
+            for (int x = 0; x < Constants.PixelPerMeter; x++)
+            {
+                for (int y = 0; y < Constants.PixelPerMeter; y++)
+                {
+                    int index = y * Constants.PixelPerMeter + x;
+                    var sourcePixel = pixelData[index];
+                    int destX = Helper.RotatePixelX(x, y, Constants.PixelPerMeter/2, Constants.PixelPerMeter/2, rotation);
+                    int destY = Helper.RotatePixelY(x, y, Constants.PixelPerMeter/2, Constants.PixelPerMeter/2, rotation);
+
+                    if (destX > -1 && destX < Constants.PixelPerMeter && destY > -1 && destY < Constants.PixelPerMeter)
+                    {
+                        int rotIndex = destY * Constants.PixelPerMeter + destX;
+                        rotatedPixelData[rotIndex] = sourcePixel;
+                    }
+                }
+            }
+            mUpperEdgeTexture.SetData(0, new Rectangle((int) (firstContact.X - 16), 0, Constants.PixelPerMeter, Constants.PixelPerMeter), rotatedPixelData, 0, rotatedPixelData.Length);
         }
 
         private void Debug(string key, string text)

@@ -22,6 +22,8 @@ namespace ChainTrapper
         public Vector2 Position { get; set; }
         public float Speed { get; set; }
         public bool ShouldBeRemoved { get; set; }
+        public float Rotation => mBody.GetAngle();
+
         protected World mWorld;
         protected Fixture mShape;
         protected Body mBody;
