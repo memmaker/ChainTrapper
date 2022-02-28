@@ -23,6 +23,7 @@ namespace ChainTrapper
         public float Speed { get; set; }
         public bool ShouldBeRemoved { get; set; }
         public float Rotation => mBody.GetAngle();
+        public bool IsBurning { get; set; }
 
         protected World mWorld;
         protected Fixture mShape;
@@ -87,7 +88,12 @@ namespace ChainTrapper
         }
         public virtual void Draw(SpriteBatch spriteBatch)
         {
-            spriteBatch.Draw(mSprite, Position, null, Color.White, mBody.GetAngle(), mSprite.Bounds.Center.ToVector2(), Vector2.One, SpriteEffects.None, 0.0f);
+            Color drawColor = Color.White;
+            if (IsBurning)
+            {
+                drawColor = Helper.Percent(50) ? Color.OrangeRed : Color.Red;
+            }
+            spriteBatch.Draw(mSprite, Position, null, drawColor, mBody.GetAngle(), mSprite.Bounds.Center.ToVector2(), Vector2.One, SpriteEffects.None, 0.0f);
         }
         public bool IsAtPosition(Vector2 position)
         {

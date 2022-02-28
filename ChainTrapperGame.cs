@@ -14,7 +14,7 @@ using Math = System.Math;
 
 namespace ChainTrapper
 {
-    public enum TrapType { TimedBomb, RemoteBomb, Fire }
+    public enum TrapType { FireTrap, SpikedHole, ExplodingBarrel }
 
     public class ChainTrapperGame : Game, ContactListener
     {
@@ -27,7 +27,7 @@ namespace ChainTrapper
         private SpriteBatch mSpriteBatch;
         private Player mPlayer;
         private SpriteFont mFont;
-        private List<Enemy> mEnemies = new List<Enemy>();
+        private List<Wolf> mWolves = new List<Wolf>();
 
         private List<GameObject> mAllGameObjects => mContext.AllGameObjects;
         private KeyboardState mOldKeyboardState;
@@ -38,7 +38,7 @@ namespace ChainTrapper
 
         private HashSet<ITriggered> mTrapsToTrigger = new HashSet<ITriggered>();
 
-        private TrapType mSelectedTraps = TrapType.TimedBomb;
+        private TrapType mSelectedTraps = TrapType.FireTrap;
         private Texture2D mArrowTexture;
         private World mPhysicsWorld;
 
@@ -48,6 +48,11 @@ namespace ChainTrapper
         public ChainTrapperGame()
         {
             mGraphics = new GraphicsDeviceManager(this);
+            /*
+            mGraphics.PreferredBackBufferWidth = 1920;
+            mGraphics.PreferredBackBufferHeight = 1080;
+            mGraphics.IsFullScreen = true;
+            */
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
             IsFixedTimeStep = true;
@@ -56,6 +61,7 @@ namespace ChainTrapper
             ScreenHeight = mGraphics.PreferredBackBufferHeight;
 
             mContext.AllGameObjects = new List<GameObject>();
+            mContext.QueuedActions = new Queue<Action>();
             mOldKeyboardState = Keyboard.GetState();
         }
 
@@ -157,6 +163,14 @@ namespace ChainTrapper
                 bluePixels[i] = Color.BlueViolet;
             }
             blueTexture.SetData<Color>(bluePixels);
+            
+            var whiteTexture = new Texture2D(mGraphics.GraphicsDevice, unitSize, unitSize);
+            Color[] whitePixels = new Color[unitSize * unitSize];
+            for (int i = 0; i < unitSize * unitSize; i++)
+            {
+                whitePixels[i] = Color.White;
+            }
+            whiteTexture.SetData<Color>(whitePixels);
 
             mTrapTexture = new Texture2D(mGraphics.GraphicsDevice, unitSize, unitSize);
             Color[] yellowPixels = new Color[unitSize * unitSize];
@@ -187,9 +201,15 @@ namespace ChainTrapper
 
             for (int i = 0; i < 7; i++)
             {
-                var enemy = new Enemy(mPhysicsWorld, Helper.RandomPosition(), blueTexture);
-                mEnemies.Add(enemy);
+                var enemy = new Wolf(mPhysicsWorld, Helper.RandomPosition(), blueTexture);
+                mWolves.Add(enemy);
                 mAllGameObjects.Add(enemy);
+            }
+            
+            for (int i = 0; i < 7; i++)
+            {
+                var sheep = new Sheep(mPhysicsWorld, new Vector2(50,50), whiteTexture);
+                mAllGameObjects.Add(sheep);
             }
 
             mUpperEdgeTexture = new RenderTarget2D(mGraphics.GraphicsDevice, ScreenWidth, Constants.PixelPerMeter);
@@ -203,6 +223,11 @@ namespace ChainTrapper
             HandleInput();
             
             PhysicsUpdate();
+
+            while (mContext.QueuedActions.TryDequeue(out var queuedAction))
+            {
+                queuedAction.Invoke();
+            }
             
             for (int i = mAllGameObjects.Count - 1; i >= 0; i--)
             {
@@ -219,7 +244,7 @@ namespace ChainTrapper
                     }
                 }
             }
-
+            
             // DumbAndSlowCollisionDetection();
 
             mDebugInfo["Pl_Pos"] = mPlayer.Position.ToString();
@@ -313,15 +338,14 @@ namespace ChainTrapper
             GameObject trap = null;
             switch (mSelectedTraps)
             {
-                case TrapType.TimedBomb:
+                case TrapType.ExplodingBarrel:
                     trap = new TimedBomb(mPhysicsWorld, mPlayer.Position, mTrapTexture);
                     break;
-                case TrapType.RemoteBomb:
-                    trap = new RemoteBomb(mPhysicsWorld, mPlayer.Position, mTrapTexture);
-                    mTrapsToTrigger.Add((RemoteBomb)trap);
+                case TrapType.FireTrap:
+                    trap = new FireTrap(mPhysicsWorld, mPlayer.Position, mTrapTexture, mTrapTexture);
                     break;
-                case TrapType.Fire:
-                    trap = new Fire(mPhysicsWorld, mPlayer.Position, mTrapTexture);
+                case TrapType.SpikedHole:
+                    trap = new SpikedHole(mPhysicsWorld, mPlayer.Position, mTrapTexture);
                     break;
             }
 
@@ -383,6 +407,16 @@ namespace ChainTrapper
             if (contact.FixtureB.Body.GetUserData() != null)
             {
                 go2 = (GameObject) contact.FixtureB.Body.GetUserData();
+            }
+
+            if (go1 is IVictimCollisionListener && (go2 is Wolf || go2 is Sheep))
+            {
+                ((IVictimCollisionListener) go1).OnVictimEntered(mContext, go2);
+            }
+            
+            if (go2 is IVictimCollisionListener && (go1 is Wolf || go1 is Sheep))
+            {
+                ((IVictimCollisionListener) go2).OnVictimEntered(mContext, go1);
             }
 
             if (go1 is Projectile && !(go2 is Player))

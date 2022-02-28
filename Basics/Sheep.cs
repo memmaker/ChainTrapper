@@ -8,7 +8,7 @@ using Microsoft.Xna.Framework.Graphics;
 namespace ChainTrapper
 {
     public enum BehaviourType { None, MoveInDirection, StayAtLocation, FollowPath}
-    public class Enemy : GameObject
+    public class Sheep : GameObject
     {
         private Vector2 mDesiredDirection;
         private Vector2 mDesiredPosition;
@@ -16,7 +16,7 @@ namespace ChainTrapper
         private List<Vector2> mPath = new List<Vector2>();
         private int mCurrentPathNode;
 
-        public Enemy(World world, Vector2 position, Texture2D texture) : base(world, position, texture)
+        public Sheep(World world, Vector2 position, Texture2D texture) : base(world, position, texture)
         {
             mDesiredDirection = Helper.Percent(50) ? Helper.RandomDirection() : Vector2.Zero;
             mDesiredPosition = Helper.Percent(50) ? Helper.RandomPosition() : Position;
