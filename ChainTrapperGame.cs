@@ -408,29 +408,31 @@ namespace ChainTrapper
         {
             var rotation = gameObject.Rotation;
             Color[] pixelData = new Color[Constants.PixelPerMeter * Constants.PixelPerMeter];
-            Color[] rotatedPixelData = new Color[Constants.PixelPerMeter * Constants.PixelPerMeter];
             mArrowTexture.GetData(pixelData);
             contact.GetWorldManifold(out var worldManifold);
             var firstContact = worldManifold.Points[0] * Constants.PixelPerMeter;
             Debug("Contact", firstContact.X + "/" + firstContact.Y);
-
+            Color[] originalEdgeData = new Color[Constants.PixelPerMeter * Constants.PixelPerMeter];
+            mUpperEdgeTexture.GetData(0, new Rectangle((int) (firstContact.X - 16), 0, Constants.PixelPerMeter, Constants.PixelPerMeter), originalEdgeData,0, Constants.PixelPerMeter * Constants.PixelPerMeter);
             for (int x = 0; x < Constants.PixelPerMeter; x++)
             {
                 for (int y = 0; y < Constants.PixelPerMeter; y++)
                 {
                     int index = y * Constants.PixelPerMeter + x;
                     var sourcePixel = pixelData[index];
+                    if (sourcePixel == Color.Transparent)
+                        continue;
                     int destX = Helper.RotatePixelX(x, y, Constants.PixelPerMeter/2, Constants.PixelPerMeter/2, rotation);
                     int destY = Helper.RotatePixelY(x, y, Constants.PixelPerMeter/2, Constants.PixelPerMeter/2, rotation);
 
                     if (destX > -1 && destX < Constants.PixelPerMeter && destY > -1 && destY < Constants.PixelPerMeter)
                     {
                         int rotIndex = destY * Constants.PixelPerMeter + destX;
-                        rotatedPixelData[rotIndex] = sourcePixel;
+                        originalEdgeData[rotIndex] = sourcePixel;
                     }
                 }
             }
-            mUpperEdgeTexture.SetData(0, new Rectangle((int) (firstContact.X - 16), 0, Constants.PixelPerMeter, Constants.PixelPerMeter), rotatedPixelData, 0, rotatedPixelData.Length);
+            mUpperEdgeTexture.SetData(0, new Rectangle((int) (firstContact.X - 16), 0, Constants.PixelPerMeter, Constants.PixelPerMeter), originalEdgeData, 0, originalEdgeData.Length);
         }
 
         private void Debug(string key, string text)
