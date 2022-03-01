@@ -10,6 +10,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Color = Microsoft.Xna.Framework.Color;
+using IDrawable = ChainTrapper.Traits.IDrawable;
 using Math = System.Math;
 
 namespace ChainTrapper
@@ -44,15 +45,27 @@ namespace ChainTrapper
 
         private RenderTarget2D mUpperEdgeTexture;
         private Fixture mUpperFixture;
+        private List<IDrawable> mDrawables = new List<IDrawable>();
+        private Texture2D mWallTexture;
+        private DebugDrawer mDebugDrawer;
 
         public ChainTrapperGame()
         {
             mGraphics = new GraphicsDeviceManager(this);
-            /*
-            mGraphics.PreferredBackBufferWidth = 1920;
-            mGraphics.PreferredBackBufferHeight = 1080;
-            mGraphics.IsFullScreen = true;
-            */
+            if (GraphicsDevice == null)
+            {
+                mGraphics.ApplyChanges();
+            }
+            mGraphics.PreferredBackBufferWidth = 1440 / 2;
+            mGraphics.PreferredBackBufferHeight = 900 / 2;
+            
+            // This should set the resolution to the desktop resolution
+            //mGraphics.PreferredBackBufferWidth = GraphicsDevice.Adapter.CurrentDisplayMode.Width;
+            //mGraphics.PreferredBackBufferHeight = GraphicsDevice.Adapter.CurrentDisplayMode.Height;
+            
+            //mGraphics.IsFullScreen = true;
+            mGraphics.ApplyChanges();
+            
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
             IsFixedTimeStep = true;
@@ -63,6 +76,8 @@ namespace ChainTrapper
             mContext.AllGameObjects = new List<GameObject>();
             mContext.QueuedActions = new Queue<Action>();
             mOldKeyboardState = Keyboard.GetState();
+            
+            
         }
 
         protected override void Initialize()
@@ -131,6 +146,11 @@ namespace ChainTrapper
                 Restitution = 0.6f
             };
             rightBody.CreateFixture(rightFixtureDef);
+
+
+            mDebugDrawer = new DebugDrawer(mGraphics.GraphicsDevice);
+            mDebugDrawer.Flags = Box2DX.Dynamics.DebugDraw.DrawFlags.Shape;
+            mPhysicsWorld.SetDebugDraw(mDebugDrawer);
         }
 
         private void PhysicsUpdate()
@@ -191,8 +211,19 @@ namespace ChainTrapper
                     blackPixels[i] = color;
                 }
             }
-
             mArrowTexture.SetData<Color>(blackPixels);
+            
+            
+            mWallTexture = new Texture2D(mGraphics.GraphicsDevice, unitSize/4, unitSize * 4);
+            Color[] grayPixels = new Color[(unitSize/4) * (unitSize*4)];
+            for (int i = 0; i < (unitSize/4) * (unitSize*4); i++)
+            {
+                grayPixels[i] = Color.Gray;
+            }
+            mWallTexture.SetData<Color>(grayPixels);
+
+            var oneWall = new Wall(mPhysicsWorld, new Vector2(350, 300), mWallTexture);
+            mDrawables.Add(oneWall);
 
             mPlayer = new Player(mPhysicsWorld, new Vector2(100, 100), texture);
             mDebugInfo.Add("Pl_Pos", mPlayer.Position.ToString());
@@ -368,6 +399,11 @@ namespace ChainTrapper
             mSpriteBatch.Begin();
             
             mSpriteBatch.Draw(mUpperEdgeTexture, Vector2.Zero, Color.White);
+
+            foreach (var drawable in mDrawables)
+            {
+                drawable.Draw(mSpriteBatch);
+            }
             
             foreach (var gameObject in mAllGameObjects)
             {
@@ -375,7 +411,7 @@ namespace ChainTrapper
             }           
 
             DebugDraw();
-
+            mDebugDrawer.FlushDrawing();
             mSpriteBatch.End();
 
             base.Draw(gameTime);
@@ -397,44 +433,47 @@ namespace ChainTrapper
         
         public void BeginContact(Contact contact)
         {
-            GameObject go1 = null, go2 = null;
+            object go1 = null, go2 = null;
             
             if (contact.FixtureA.Body.GetUserData() != null)
             {
-                go1 = (GameObject) contact.FixtureA.Body.GetUserData();
+                go1 = contact.FixtureA.Body.GetUserData();
             }
             
             if (contact.FixtureB.Body.GetUserData() != null)
             {
-                go2 = (GameObject) contact.FixtureB.Body.GetUserData();
+                go2 = contact.FixtureB.Body.GetUserData();
             }
 
             if (go1 is IVictimCollisionListener listener1 && (go2 is Wolf || go2 is Sheep))
             {
-                listener1.OnVictimEntered(mContext, go2);
+                listener1.OnVictimEntered(mContext, (GameObject)go2);
             }
             
             if (go2 is IVictimCollisionListener listener2 && (go1 is Wolf || go1 is Sheep))
             {
-                listener2.OnVictimEntered(mContext, go1);
+                listener2.OnVictimEntered(mContext, (GameObject)go1);
             }
 
             if (go1 is Projectile && !(go2 is Player))
             {
+                var go = (GameObject)go1;
                 if (contact.FixtureB == mUpperFixture)
                 {
-                    HitUpperEdge(go1, contact);
+                    HitUpperEdge(go, contact);
                 }
-                go1.Destroy();
+
+                go.Destroy();
             }
 
             if (go2 is Projectile && !(go1 is Player))
             {
+                var go = (GameObject)go2;
                 if (contact.FixtureA == mUpperFixture)
                 {
-                    HitUpperEdge(go2, contact);
+                    HitUpperEdge(go, contact);
                 }
-                go2.Destroy();
+                go.Destroy();
             }
         }
 
@@ -497,20 +536,157 @@ namespace ChainTrapper
         }
     }
 
+    public class DebugDrawer : DebugDraw
+    {
+        
+        public const int MAX_VERTS = 4000;
+        public const int MAX_INDICES = 4000;
+
+        // Indices for drawing the edges of a cube, given the vertex ordering
+        // used by Bounding(Frustum|Box|OrientedBox).GetCorners()
+        static ushort[] cubeIndices = new ushort[] { 0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6, 6, 7, 7, 4, 0, 4, 1, 5, 2, 6, 3, 7 };
+
+        
+        BasicEffect basicEffect;
+        DynamicVertexBuffer vertexBuffer;
+        DynamicIndexBuffer indexBuffer;
+
+        ushort[] Indices = new ushort[MAX_INDICES];
+        VertexPositionColor[] Vertices = new VertexPositionColor[MAX_VERTS];
+        int IndexCount;
+        int VertexCount;
+        
+        public DebugDrawer(GraphicsDevice device)
+        {
+            vertexBuffer = new DynamicVertexBuffer(device, typeof(VertexPositionColor), MAX_VERTS, BufferUsage.WriteOnly);
+            indexBuffer = new DynamicIndexBuffer(device, typeof(ushort), MAX_INDICES, BufferUsage.WriteOnly);
+            
+            basicEffect = new BasicEffect(device); //(device, null);
+            basicEffect.LightingEnabled = false;
+            basicEffect.VertexColorEnabled = true;
+            basicEffect.TextureEnabled = false;
+            Begin(device);
+        }
+        public void Begin(GraphicsDevice device)
+        {
+            Matrix projection =
+                Matrix.CreateOrthographicOffCenter(0, device.Viewport.Width, device.Viewport.Height, 0, 0, -1);
+            Matrix halfPixelOffset = Matrix.CreateTranslation(-0.5f, -0.5f, 0);
+            basicEffect.World = Matrix.Identity;
+            basicEffect.View = Matrix.Identity;
+            basicEffect.Projection = halfPixelOffset * projection;
+
+            VertexCount = 0;
+            IndexCount = 0;
+        }
+        public override void DrawPolygon(Vec2[] vertices, int vertexCount, Box2DX.Dynamics.Color color)
+        {
+            for (int i = 0; i < vertexCount - 1; i++)
+            {
+                DrawSegment(vertices[i], vertices[i+1], color);
+            }
+            DrawSegment(vertices[vertexCount - 1], vertices[0], color);
+        }
+
+        public override void DrawSolidPolygon(Vec2[] vertices, int vertexCount, Box2DX.Dynamics.Color color)
+        {
+            DrawPolygon(vertices, vertexCount, color);
+        }
+
+        public override void DrawCircle(Vec2 center, float radius, Box2DX.Dynamics.Color color)
+        {
+            int pointCount = (int) Math.Ceiling((radius * 16.0f)* Math.PI);
+            Vec2[] vertices = new Vec2[pointCount];
+            
+            var pointTheta = ((float)Math.PI * 2) / (vertices.Length - 1);
+            for (int i = 0; i < vertices.Length; i++)
+            {
+                var theta = pointTheta * i;
+                var x = center.X + ((float)Math.Sin(theta) * radius);
+                var y = center.Y + ((float)Math.Cos(theta) * radius);
+                vertices[i] = new Vec2(x, y);
+            }
+            DrawPolygon(vertices, pointCount, color);
+        }
+
+        public override void DrawSolidCircle(Vec2 center, float radius, Vec2 axis, Box2DX.Dynamics.Color color)
+        {
+            DrawCircle(center, radius, color);
+        }
+
+        public override void DrawSegment(Vec2 p1, Vec2 p2, Box2DX.Dynamics.Color color)
+        {
+            if(Reserve(2, 2))
+            {
+                Indices[IndexCount++] = (ushort)VertexCount;
+                Indices[IndexCount++] = (ushort)(VertexCount+1);
+                Vertices[VertexCount++] = new VertexPositionColor(new Vector3(p1.X * 32.0f, p1.Y * 32.0f, 0), new Color(color.R, color.G, color.B));
+                Vertices[VertexCount++] = new VertexPositionColor(new Vector3(p2.X * 32.0f, p2.Y * 32.0f, 0), new Color(color.R, color.G, color.B));
+            }
+        }
+
+        public override void DrawXForm(XForm xf)
+        {
+            throw new NotImplementedException();
+        }
+        
+        // Check if there's enough space to draw an object with the given vertex/index counts.
+        // If necessary, call FlushDrawing() to make room.
+        private bool Reserve(int numVerts, int numIndices)
+        {
+            if(numVerts > MAX_VERTS || numIndices > MAX_INDICES)
+            {
+                // Whatever it is, we can't draw it
+                return false;
+            }
+            if (VertexCount + numVerts > MAX_VERTS || IndexCount + numIndices >= MAX_INDICES)
+            {
+                // We can draw it, but we need to make room first
+                FlushDrawing();
+            }
+            return true;
+        }
+        
+        // Draw any queued objects and reset our line buffers
+        public void FlushDrawing()
+        {
+            if (IndexCount > 0)
+            {
+                vertexBuffer.SetData(Vertices, 0, VertexCount, SetDataOptions.Discard);
+                indexBuffer.SetData(Indices, 0, IndexCount, SetDataOptions.Discard);
+
+                GraphicsDevice device = basicEffect.GraphicsDevice;
+                device.SetVertexBuffer(vertexBuffer);
+                device.Indices = indexBuffer;
+
+                foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
+                {
+                    pass.Apply();
+                    device.DrawIndexedPrimitives(PrimitiveType.LineList,  0, 0, IndexCount / 2);
+                }
+
+                device.SetVertexBuffer(null);
+                device.Indices = null;
+            }
+            IndexCount = 0;
+            VertexCount = 0;
+        }
+    }
+
     internal class CollisionFilter : ContactFilter
     {
         public override bool ShouldCollide(Fixture fixtureA, Fixture fixtureB)
         {
-            GameObject go1 = null, go2 = null;
+            object go1 = null, go2 = null;
             
             if (fixtureA.Body.GetUserData() != null)
             {
-                go1 = (GameObject) fixtureA.Body.GetUserData();
+                go1 = fixtureA.Body.GetUserData();
             }
             
             if (fixtureB.Body.GetUserData() != null)
             {
-                go2 = (GameObject) fixtureB.Body.GetUserData();
+                go2 = fixtureB.Body.GetUserData();
             }
 
             if ((go1 is Player && go2 is Projectile) || (go2 is Player && go1 is Projectile))
@@ -522,6 +698,9 @@ namespace ChainTrapper
             {
                 return false;
             }
+
+            if (go1 is Wall || go2 is Wall)
+                return true;
 
             return true;
         }

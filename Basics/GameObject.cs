@@ -6,6 +6,7 @@ using ChainTrapper.Basics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Color = Microsoft.Xna.Framework.Color;
+using IDrawable = ChainTrapper.Traits.IDrawable;
 using Math = System.Math;
 
 namespace ChainTrapper
@@ -16,7 +17,7 @@ namespace ChainTrapper
         Frozen,
         Poisoned
     }
-    public class GameObject
+    public class GameObject : IDrawable
     {
         protected Texture2D mSprite;
         public Vector2 Position { get; set; }

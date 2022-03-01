@@ -119,7 +119,7 @@ namespace ChainTrapper.Basics
                         if (hitFixtures[i] == null) continue;
 
                         var firstVisibleFixture = hitFixtures[i];
-                        var firstVisibleGo = (GameObject) firstVisibleFixture.UserData;
+                        var firstVisibleGo = firstVisibleFixture.UserData;
                         if (firstVisibleGo is Sheep sheep)
                         {
                             mDesiredSheep = sheep;
