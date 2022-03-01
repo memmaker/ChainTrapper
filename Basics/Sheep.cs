@@ -2,14 +2,17 @@
 using System.Collections.Generic;
 using Box2DX.Dynamics;
 using ChainTrapper.Basics;
+using ChainTrapper.Traits;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Color = Microsoft.Xna.Framework.Color;
 
 namespace ChainTrapper
 {
     public enum BehaviourType { None, MoveInDirection, StayAtLocation, FollowPath}
-    public class Sheep : GameObject
+    public class Sheep : GameObject, IWoundable
     {
+        private int mCurrentHealth = 5;
         private Vector2 mDesiredDirection;
         private Vector2 mDesiredPosition;
         private BehaviourType mBehaviourType;
@@ -28,6 +31,12 @@ namespace ChainTrapper
             mCurrentPathNode = 0;
             mDesiredPosition = mPath[mCurrentPathNode];
             Speed = Helper.RandomSpeed();
+        }
+
+        public override void Draw(SpriteBatch spriteBatch)
+        {
+            base.Draw(spriteBatch);
+            spriteBatch.DrawString(Globals.DefaultFont, mCurrentHealth.ToString(), Position - (Vector2.UnitY * Constants.PixelPerMeter), Color.White);
         }
 
         public override void Update(GameTime gameTime, Context context)
@@ -58,5 +67,15 @@ namespace ChainTrapper
             ApplyForce(mDesiredDirection);
             
         }
+
+        public void TakeDamage(int damage)
+        {
+            mCurrentHealth -= damage;
+            if (IsDead)
+                ShouldBeRemoved = true;
+        }
+
+        public bool IsDead => mCurrentHealth <= 0;
+        public int CurrentHealth => mCurrentHealth;
     }
 }

@@ -24,6 +24,7 @@ namespace ChainTrapper
         public bool ShouldBeRemoved { get; set; }
         public float Rotation => mBody.GetAngle();
         public bool IsBurning { get; set; }
+        public Body Body => mBody;
 
         protected World mWorld;
         protected Fixture mShape;
@@ -98,6 +99,10 @@ namespace ChainTrapper
         public bool IsAtPosition(Vector2 position)
         {
             return Vector2.Distance(Position, position) <= 1.5f;
+        }
+        protected bool IsNextTo(GameObject other)
+        {
+            return Vector2.Distance(Position, other.Position) <= Constants.PixelPerMeter;
         }
         public void Cleanup()
         {

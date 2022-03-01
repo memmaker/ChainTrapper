@@ -26,7 +26,7 @@ namespace ChainTrapper
         private GraphicsDeviceManager mGraphics;
         private SpriteBatch mSpriteBatch;
         private Player mPlayer;
-        private SpriteFont mFont;
+        
         private List<Wolf> mWolves = new List<Wolf>();
 
         private List<GameObject> mAllGameObjects => mContext.AllGameObjects;
@@ -145,7 +145,7 @@ namespace ChainTrapper
         protected override void LoadContent()
         {
             mSpriteBatch = new SpriteBatch(GraphicsDevice);
-            mFont = Content.Load<SpriteFont>("Fonts/Default");
+            Globals.DefaultFont = Content.Load<SpriteFont>("Fonts/Default");
 
             var unitSize = Constants.PixelPerMeter;
             var texture = new Texture2D(mGraphics.GraphicsDevice, unitSize, unitSize);
@@ -384,12 +384,12 @@ namespace ChainTrapper
         private void DebugDraw()
         {
             Vector2 drawPos = Vector2.Zero;
-            var lineHeight = mFont.MeasureString("XMI").Y;
+            var lineHeight = Globals.DefaultFont.MeasureString("XMI").Y;
             foreach (var kvp in mDebugInfo)
             {
                 string line = kvp.Key + ": " + kvp.Value;                
-                mSpriteBatch.DrawString(mFont, line, drawPos, Color.Black);
-                mSpriteBatch.DrawString(mFont, line, drawPos + Vector2.One, Color.White);
+                mSpriteBatch.DrawString(Globals.DefaultFont, line, drawPos, Color.Black);
+                mSpriteBatch.DrawString(Globals.DefaultFont, line, drawPos + Vector2.One, Color.White);
                 drawPos += Vector2.UnitY * lineHeight;
             }
         }
@@ -409,14 +409,14 @@ namespace ChainTrapper
                 go2 = (GameObject) contact.FixtureB.Body.GetUserData();
             }
 
-            if (go1 is IVictimCollisionListener && (go2 is Wolf || go2 is Sheep))
+            if (go1 is IVictimCollisionListener listener1 && (go2 is Wolf || go2 is Sheep))
             {
-                ((IVictimCollisionListener) go1).OnVictimEntered(mContext, go2);
+                listener1.OnVictimEntered(mContext, go2);
             }
             
-            if (go2 is IVictimCollisionListener && (go1 is Wolf || go1 is Sheep))
+            if (go2 is IVictimCollisionListener listener2 && (go1 is Wolf || go1 is Sheep))
             {
-                ((IVictimCollisionListener) go2).OnVictimEntered(mContext, go1);
+                listener2.OnVictimEntered(mContext, go1);
             }
 
             if (go1 is Projectile && !(go2 is Player))
