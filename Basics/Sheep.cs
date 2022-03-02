@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Box2DX.Dynamics;
 using ChainTrapper.Basics;
+using ChainTrapper.Globals;
 using ChainTrapper.Traits;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -36,7 +37,7 @@ namespace ChainTrapper
         public override void Draw(SpriteBatch spriteBatch)
         {
             base.Draw(spriteBatch);
-            spriteBatch.DrawString(Globals.DefaultFont, mCurrentHealth.ToString(), Position - (Vector2.UnitY * Constants.PixelPerMeter), Color.White);
+            spriteBatch.DrawString(Globals.Globals.DefaultFont, mCurrentHealth.ToString(), Position - (Vector2.UnitY * Constants.PixelPerMeter), Color.White);
         }
 
         public override void Update(GameTime gameTime, Context context)

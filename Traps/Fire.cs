@@ -1,6 +1,7 @@
 using Box2DX.Collision;
 using Box2DX.Common;
 using Box2DX.Dynamics;
+using ChainTrapper.Globals;
 using ChainTrapper.Traps;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;

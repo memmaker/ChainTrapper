@@ -1,6 +1,6 @@
 using Box2DX.Common;
 
-namespace ChainTrapper.Basics
+namespace ChainTrapper.Globals
 {
     public static class Constants
     {

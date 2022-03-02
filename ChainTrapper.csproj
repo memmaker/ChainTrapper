@@ -15,6 +15,7 @@
     <None Remove="Traps\" />
     <None Remove="Basics\" />
     <None Remove="Traits\" />
+    <None Remove="Content\Content.mgcb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Icon.ico" />

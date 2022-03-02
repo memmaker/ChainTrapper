@@ -3,6 +3,7 @@ using Box2DX.Collision;
 using Box2DX.Common;
 using Box2DX.Dynamics;
 using ChainTrapper.Basics;
+using ChainTrapper.Globals;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Color = Microsoft.Xna.Framework.Color;

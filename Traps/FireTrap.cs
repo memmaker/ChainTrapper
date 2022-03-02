@@ -1,6 +1,7 @@
 using System;
 using Box2DX.Dynamics;
 using ChainTrapper.Basics;
+using ChainTrapper.Globals;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
