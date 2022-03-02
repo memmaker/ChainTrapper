@@ -16,12 +16,12 @@ namespace ChainTrapper.Basics
             
         }
 
-        public void OnVictimEntered(Context context, GameObject victim)
+        public void OnVictimEntered(GameContext gameContext, GameObject victim)
         {
             victim.IsBurning = true;
         }
 
-        public override void Update(GameTime gameTime, Context context)
+        public override void Update(GameTime gameTime, GameContext gameContext)
         {
             if (mDelay > 0.0f)
             {
@@ -52,7 +52,7 @@ namespace ChainTrapper.Basics
                         }
                         
                         var fire = new Fire(mWorld, position, mSprite);
-                        context.AllGameObjects.Add(fire);
+                        gameContext.AllGameObjects.Add(fire);
                         mDelay = Helper.RandomInt(5) + 3;
                     }
                 }

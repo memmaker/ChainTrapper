@@ -7,11 +7,11 @@ namespace ChainTrapper.Physics
 {
     public class CollisionHandler : ContactListener
     {
-        private Context mContext;
+        private GameContext mGameContext;
 
-        public CollisionHandler(Context context)
+        public CollisionHandler(GameContext gameContext)
         {
-            mContext = context;
+            mGameContext = gameContext;
         }
         
         public void BeginContact(Contact contact)
@@ -30,12 +30,12 @@ namespace ChainTrapper.Physics
 
             if (go1 is IVictimCollisionListener listener1 && (go2 is Wolf || go2 is Sheep))
             {
-                listener1.OnVictimEntered(mContext, (GameObject)go2);
+                listener1.OnVictimEntered(mGameContext, (GameObject)go2);
             }
             
             if (go2 is IVictimCollisionListener listener2 && (go1 is Wolf || go1 is Sheep))
             {
-                listener2.OnVictimEntered(mContext, (GameObject)go1);
+                listener2.OnVictimEntered(mGameContext, (GameObject)go1);
             }
 
             if (go1 is Projectile && !(go2 is Player))

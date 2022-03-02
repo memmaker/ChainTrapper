@@ -13,9 +13,9 @@ namespace ChainTrapper.Traps
         {
         }
 
-        public void ActivateTrigger(Context context)
+        public void ActivateTrigger(GameContext gameContext)
         {
-            Explode(context);
+            Explode(gameContext);
         }
     }
 }

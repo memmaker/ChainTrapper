@@ -20,5 +20,10 @@ namespace ChainTrapper.Globals
         {
             return new Vector2(vector.X * Constants.PixelPerMeter, vector.Y * Constants.PixelPerMeter);
         }
+        
+        public static Vec2 ToPhysics(this Vector2 vector)
+        {
+            return new Vec2(vector.X / Constants.PixelPerMeter, vector.Y / Constants.PixelPerMeter);
+        }
     }
 }

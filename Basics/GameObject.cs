@@ -85,7 +85,7 @@ namespace ChainTrapper
             mBody.ApplyForce(change.ToVec2(), mBody.GetWorldCenter());
         }
 
-        public virtual void Update(GameTime gameTime, Context context)
+        public virtual void Update(GameTime gameTime, GameContext gameContext)
         {
             Position = new Vector2(mBody.GetPosition().X * Constants.PixelPerMeter, mBody.GetPosition().Y * Constants.PixelPerMeter);
         }

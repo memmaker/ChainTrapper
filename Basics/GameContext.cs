@@ -4,7 +4,7 @@ using Box2DX.Dynamics;
 
 namespace ChainTrapper.Basics
 {
-    public struct Context
+    public struct GameContext
     {
         public World PhysicsWorld;
         public List<GameObject> AllGameObjects;

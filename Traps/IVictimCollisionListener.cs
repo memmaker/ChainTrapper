@@ -4,6 +4,6 @@ namespace ChainTrapper.Traps
 {
     public interface IVictimCollisionListener
     {
-        void OnVictimEntered(Context context, GameObject victim);
+        void OnVictimEntered(GameContext gameContext, GameObject victim);
     }
 }

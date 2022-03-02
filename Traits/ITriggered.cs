@@ -5,6 +5,6 @@ namespace ChainTrapper.Traits
 {
     public interface ITriggered
     {
-        public void ActivateTrigger(Context context);
+        public void ActivateTrigger(GameContext gameContext);
     }
 }

@@ -12,7 +12,7 @@ namespace ChainTrapper.Traps
             
         }
 
-        public void OnVictimEntered(Context context, GameObject victim)
+        public void OnVictimEntered(GameContext gameContext, GameObject victim)
         {
             // Kill the victim
             // Play Death animation

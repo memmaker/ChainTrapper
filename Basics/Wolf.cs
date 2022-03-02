@@ -24,21 +24,21 @@ namespace ChainTrapper.Basics
         {
             mState = WolfState.Awake;
         }
-        public override void Update(GameTime gameTime, Context context)
+        public override void Update(GameTime gameTime, GameContext gameContext)
         {
-            base.Update(gameTime, context);
+            base.Update(gameTime, gameContext);
             switch (mState)
             {
                 case WolfState.Sleeping:
                     return;
                 case WolfState.Awake:
-                    UpdateReactionCounter(gameTime, context);
+                    UpdateReactionCounter(gameTime, gameContext);
                     break;
                 case WolfState.Chasing:
                     ChaseSheep();
                     break;
                 case WolfState.Attacking:
-                    UpdateReactionCounter(gameTime, context);
+                    UpdateReactionCounter(gameTime, gameContext);
                     break;
             }
         }
@@ -76,7 +76,7 @@ namespace ChainTrapper.Basics
             ApplyForce(desiredDirection);
         }
 
-        private void UpdateReactionCounter(GameTime gameTime, Context context)
+        private void UpdateReactionCounter(GameTime gameTime, GameContext gameContext)
         {
             if (mReactionCounter > 0.0f)
             {
@@ -85,7 +85,7 @@ namespace ChainTrapper.Basics
                 {
                     if (mState == WolfState.Awake)
                     {
-                        LookForSheep(context);
+                        LookForSheep(gameContext);
                     }
                     else if (mState == WolfState.Attacking)
                     {
@@ -96,9 +96,9 @@ namespace ChainTrapper.Basics
             }
         }
 
-        private void LookForSheep(Context context)
+        private void LookForSheep(GameContext gameContext)
         {
-            foreach (var gameObject in context.AllGameObjects)
+            foreach (var gameObject in gameContext.AllGameObjects)
             {
                 if (gameObject is Sheep)
                 {
@@ -132,7 +132,7 @@ namespace ChainTrapper.Basics
             }
         }
 
-        public void OnVictimEntered(Context context, GameObject victim)
+        public void OnVictimEntered(GameContext gameContext, GameObject victim)
         {
             if (victim is Sheep)
             {

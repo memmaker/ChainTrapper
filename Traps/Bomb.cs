@@ -19,7 +19,7 @@ namespace ChainTrapper.Traps
             
         }
 
-        protected void Explode(Context context)
+        protected void Explode(GameContext gameContext)
         {
             ShouldBeRemoved = true;
             var explosionArea = new AABB()

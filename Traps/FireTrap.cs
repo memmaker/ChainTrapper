@@ -16,11 +16,11 @@ namespace ChainTrapper.Traps
             mFireTexture = fireTexture;
         }
 
-        public void OnVictimEntered(Context context, GameObject victim)
+        public void OnVictimEntered(GameContext gameContext, GameObject victim)
         {
             ShouldBeRemoved = true;
             
-            context.QueuedActions.Enqueue(() =>
+            gameContext.QueuedActions.Enqueue(() =>
             {
                 var firePositions = new Vector2[]
                 {
@@ -38,7 +38,7 @@ namespace ChainTrapper.Traps
                 foreach (var firePosition in firePositions)
                 {
                     var trap = new Fire(mWorld, firePosition, mFireTexture);
-                    context.AllGameObjects.Add(trap);
+                    gameContext.AllGameObjects.Add(trap);
                 }
             });
         }

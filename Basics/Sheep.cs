@@ -40,9 +40,9 @@ namespace ChainTrapper
             spriteBatch.DrawString(Globals.Globals.DefaultFont, mCurrentHealth.ToString(), Position - (Vector2.UnitY * Constants.PixelPerMeter), Color.White);
         }
 
-        public override void Update(GameTime gameTime, Context context)
+        public override void Update(GameTime gameTime, GameContext gameContext)
         {
-            base.Update(gameTime, context);
+            base.Update(gameTime, gameContext);
 
             if (mBehaviourType == BehaviourType.None)
                 return;

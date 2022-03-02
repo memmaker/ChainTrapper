@@ -8,6 +8,15 @@ namespace ChainTrapper.Basics
     public class Map
     {
         // How many Sheep to Spawn
+        public Map()
+        {
+            SheepPath = new List<Vector2>();
+            WolfSpawns = new List<Vector2>();
+            Walls = new List<Rectangle>();
+        }
+
+        public List<Rectangle> Walls { get; set; }
+
         public int SheepCount { get; set; }
         
         // By convention: SheepPath[0] = Start, SheepPath[Length-1] = Goal

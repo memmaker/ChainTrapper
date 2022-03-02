@@ -14,17 +14,17 @@ namespace ChainTrapper.Traps
         {
         }
 
-        public override void Update(GameTime gameTime, Context context)
+        public override void Update(GameTime gameTime, GameContext gameContext)
         {
             if (mDelay > 0.0f && !ShouldBeRemoved)
             {
                 mDelay -= gameTime.ElapsedGameTime.TotalSeconds;
                 if (mDelay <= 0.0f)
                 {
-                    Explode(context);
+                    Explode(gameContext);
                 }
             }
-            base.Update(gameTime, context);
+            base.Update(gameTime, gameContext);
         }
     }
 }

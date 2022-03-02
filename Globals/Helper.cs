@@ -8,7 +8,7 @@ namespace ChainTrapper.Globals
         private static Random sRandom = new Random(1234);
         public static Vector2 RandomPosition()
         {
-            return new Vector2(sRandom.Next(ChainTrapper.Globals.Globals.ScreenWidth), sRandom.Next(ChainTrapper.Globals.Globals.ScreenHeight));
+            return new Vector2(sRandom.Next(Globals.ScreenWidth), sRandom.Next(Globals.ScreenHeight));
         }
 
         public static Vector2 RandomDirection()
