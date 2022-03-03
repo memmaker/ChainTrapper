@@ -256,7 +256,7 @@ namespace ChainTrapper.GameStates
             if (Keyboard.GetState().IsKeyDown(Keys.Escape))
                 mStateManager.Pop();
             
-            mInput.HandleInput();
+            mInput.HandleInput(gameTime);
             
             PhysicsUpdate();
 

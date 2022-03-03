@@ -12,13 +12,21 @@ namespace ChainTrapper.Basics
         public event PositionEvent MousePressed;
         public event PositionEvent MouseReleased;
         public event PositionEvent MouseMoved;
+        public event PositionEvent MouseBeginDrag;
+        public event EmptyEvent Remove;
+        public event EmptyEvent SaveMap;
+        
+        public event EmptyEvent LoadMap;
+
+        public double mDragDelay = 0.1f;
+        public double mDragCounter = 0.1f;
         
         private KeyboardState mOldKeyboardState;
         private MouseState mOldMouseState;
         private Vec2 mOldInput;
         private Vector2 mOldMousePosition;
 
-        public void HandleInput()
+        public void HandleInput(GameTime gameTime)
         {
             Vec2 input = Vec2.Zero;
             var keyState = Keyboard.GetState();
@@ -58,6 +66,21 @@ namespace ChainTrapper.Basics
             {
                 Fire?.Invoke();
             }
+            
+            if (keyState.IsKeyDown(Keys.Delete) && mOldKeyboardState.IsKeyUp(Keys.Delete))
+            {
+                Remove?.Invoke();
+            }
+            
+            if (keyState.IsKeyDown(Keys.K) && mOldKeyboardState.IsKeyUp(Keys.K))
+            {
+                SaveMap?.Invoke();
+            }
+            
+            if (keyState.IsKeyDown(Keys.L) && mOldKeyboardState.IsKeyUp(Keys.L))
+            {
+                LoadMap?.Invoke();
+            }
 
             if (input != Vec2.Zero || mOldInput != Vec2.Zero)
             {
@@ -67,12 +90,26 @@ namespace ChainTrapper.Basics
 
             if (mouseState.LeftButton == ButtonState.Pressed && mOldMouseState.LeftButton == ButtonState.Released)
             {
-                MousePressed?.Invoke(mouseState.Position.ToVector2());
+                MousePressed?.Invoke(mousePos);
+            }
+            
+            if (mouseState.LeftButton == ButtonState.Pressed && mOldMouseState.LeftButton == ButtonState.Pressed)
+            {
+                mDragCounter -= gameTime.ElapsedGameTime.TotalSeconds;
+                if (mDragCounter <= 0.0f)
+                {
+                    MouseBeginDrag?.Invoke(mousePos);
+                    mDragCounter = mDragDelay;
+                }
+            }
+            else
+            {
+                mDragCounter = mDragDelay;
             }
             
             if (mouseState.LeftButton == ButtonState.Released && mOldMouseState.LeftButton == ButtonState.Pressed)
             {
-                MouseReleased?.Invoke(mouseState.Position.ToVector2());
+                MouseReleased?.Invoke(mousePos);
             }
 
             if (mousePos != mOldMousePosition)
