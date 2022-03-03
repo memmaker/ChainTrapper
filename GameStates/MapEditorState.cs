@@ -79,17 +79,20 @@ namespace ChainTrapper.GameStates
                 switch (mObjectType)
                 {
                     case ObjectTypes.WolfSpawn:
+                        if (mCurrentMap.WolfSpawns.Count == 0) return;
                         mCurrentMap.WolfSpawns.RemoveAt(mCurrentMap.WolfSpawns.Count - 1);
                         break;
                     case ObjectTypes.SheepPath:
+                        if (mCurrentMap.SheepPath.Count == 0) return;
                         mCurrentMap.SheepPath.RemoveAt(mCurrentMap.SheepPath.Count - 1);
                         break;
                     case ObjectTypes.Walls:
+                        if (mCurrentMap.Walls.Count == 0) return;
                         mCurrentMap.Walls.RemoveAt(mCurrentMap.Walls.Count - 1);
                         break;
                 }
             }
-            else if (mEditorMode == EditorMode.Modify)
+            else if (mEditorMode == EditorMode.Modify && mSelectedIndex > -1)
             {
                 switch (mObjectType)
                 {
@@ -103,10 +106,6 @@ namespace ChainTrapper.GameStates
                         mCurrentMap.Walls.RemoveAt(mSelectedIndex);
                         break;
                 }
-            }
-
-            if (mSelectedIndex > -1)
-            {
                 mSelectedIndex--;
             }
         }
