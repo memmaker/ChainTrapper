@@ -43,6 +43,7 @@ namespace ChainTrapper.GameStates
         private GraphicsDeviceManager mGraphics;
         private ContentManager mContent;
         private StateManager mStateManager;
+        private Map mCurrentMap;
 
         public MainGameState(StateContext context)
         {
@@ -56,7 +57,7 @@ namespace ChainTrapper.GameStates
         {
             Initialization();
             CreatePhysicsWorld();
-            LoadContent();
+            LoadMap("Maps/map-test.bin");
         }
 
         private void Initialization()
@@ -67,6 +68,12 @@ namespace ChainTrapper.GameStates
             mInput.Movement += MovePlayer;
             mInput.NextWeapon += SelectNextTrap;
             mInput.Fire += PlaceTrap;
+            mInput.BeginSheepWalk += BeginSheepWalk;
+        }
+
+        private void BeginSheepWalk()
+        {
+            mAllGameObjects.FindAll(go => go is Sheep).ForEach(sheep => ((Sheep)sheep).StartWalk());
         }
 
         private void MovePlayer(Vec2 direction)
@@ -173,8 +180,9 @@ namespace ChainTrapper.GameStates
             PhysicsWorld.SetDebugDraw(mDebugDrawer);
         }
 
-        private void LoadContent()
+        private void LoadMap(string filename)
         {
+            mCurrentMap = Map.FromFile(filename);
             var unitSize = Constants.PixelPerMeter;
             var texture = new Texture2D(mGraphics.GraphicsDevice, unitSize, unitSize);
             Color[] redPixels = new Color[unitSize * unitSize];
@@ -221,33 +229,36 @@ namespace ChainTrapper.GameStates
             }
             mArrowTexture.SetData<Color>(blackPixels);
             
-            
-            mWallTexture = new Texture2D(mGraphics.GraphicsDevice, unitSize/4, unitSize * 4);
-            Color[] grayPixels = new Color[(unitSize/4) * (unitSize*4)];
-            for (int i = 0; i < (unitSize/4) * (unitSize*4); i++)
-            {
-                grayPixels[i] = Color.Gray;
-            }
-            mWallTexture.SetData<Color>(grayPixels);
-
-            var oneWall = new Wall(PhysicsWorld, new Vector2(350, 300), mWallTexture);
-            mDrawables.Add(oneWall);
-
             mPlayer = new Player(PhysicsWorld, new Vector2(100, 100), texture);
             mDebugInfo.Add("Pl_Pos", mPlayer.Position.ToString());
             mDebugInfo.Add("Trap", "");
             mAllGameObjects.Add(mPlayer);
 
-            for (int i = 0; i < 7; i++)
+            foreach (var wall in mCurrentMap.Walls)
             {
-                var enemy = new Wolf(PhysicsWorld, Helper.RandomPosition(), blueTexture);
+                var wallTexture = new Texture2D(mGraphics.GraphicsDevice, wall.Width, wall.Height);
+                Color[] grayPixels = new Color[wall.Width * wall.Height];
+                for (int i = 0; i < wall.Width * wall.Height; i++)
+                {
+                    grayPixels[i] = Color.Gray;
+                }
+                wallTexture.SetData<Color>(grayPixels);
+
+                var oneWall = new Wall(PhysicsWorld, wall.Center.ToVector2(), wallTexture);
+                mDrawables.Add(oneWall);
+            }
+
+            foreach (var wolfSpawn in mCurrentMap.WolfSpawns)
+            {
+                var enemy = new Wolf(PhysicsWorld, wolfSpawn, blueTexture);
                 mWolves.Add(enemy);
                 mAllGameObjects.Add(enemy);
             }
             
             for (int i = 0; i < 7; i++)
             {
-                var sheep = new Sheep(PhysicsWorld, new Vector2(50,50), whiteTexture);
+                var sheep = new Sheep(PhysicsWorld, mCurrentMap.SheepPath[0], whiteTexture);
+                sheep.Path = mCurrentMap.SheepPath;
                 mAllGameObjects.Add(sheep);
             }
         }

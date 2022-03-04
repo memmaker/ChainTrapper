@@ -56,8 +56,8 @@ namespace ChainTrapper
             
             Globals.Globals.DefaultFont = Content.Load<SpriteFont>("Fonts/Default");
             
-            //StateManager.Push(new MainGameState(mContext));
-            StateManager.Push(new MapEditorState(mContext));
+            StateManager.Push(new MainGameState(mContext));
+            //StateManager.Push(new MapEditorState(mContext));
         }
 
         protected override void Update(GameTime gameTime)

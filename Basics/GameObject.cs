@@ -4,6 +4,7 @@ using Box2DX.Common;
 using Box2DX.Dynamics;
 using ChainTrapper.Basics;
 using ChainTrapper.Globals;
+using ChainTrapper.Traits;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Color = Microsoft.Xna.Framework.Color;
@@ -31,18 +32,20 @@ namespace ChainTrapper
         protected World mWorld;
         protected Fixture mShape;
         protected Body mBody;
-        
-        public GameObject(World world, Vector2 position, Texture2D texture, float friction = 0.3f, bool isBullet = false, bool isSensor = false)
+        private double mBurnDelay = 3.0d;
+        private int mBurnCounter = 0;
+        private double mBurnTimer = 3.0d;
+
+        public GameObject(World world, Vector2 position, Texture2D texture)
         {
             ShouldBeRemoved = false;
             Speed = 3;
             Position = position;
             mSprite = texture;
             mWorld = world;
-            CreatePhysicsRepresentation(friction, isBullet, isSensor);
         }
 
-        private void CreatePhysicsRepresentation(float friction, bool isBullet, bool isSensor)
+        public void CreatePhysicsRepresentation(float mass, float density, float damping, float friction, float restitution, bool isBullet, bool isSensor)
         {
             // CREATING A DYNAMIC BODY
             BodyDef dynamicBodyDef = new BodyDef()
@@ -50,22 +53,23 @@ namespace ChainTrapper
                 MassData = new MassData()
                 {
                     Center = Constants.UnitCenter, 
-                    Mass = 1.0f
+                    Mass = mass
                 },
                 Position = new Vec2(Position.X / Constants.PixelPerMeter,Position.Y / Constants.PixelPerMeter),
                 IsBullet = isBullet,
-                LinearDamping = 0.8f
+                LinearDamping = damping
             };
             
             mBody = mWorld.CreateBody(dynamicBodyDef);
             mBody.SetUserData(this);
             FixtureDef shapeDef = new CircleDef()
             {
-                Density = 1.0f,
+                Density = density,
                 Friction = friction,
                 Type = ShapeType.CircleShape,
                 Radius = 0.5f,
-                IsSensor = isSensor
+                IsSensor = isSensor,
+                Restitution = restitution
             };
             mShape = mBody.CreateFixture(shapeDef);
             mShape.UserData = this;
@@ -88,7 +92,31 @@ namespace ChainTrapper
         public virtual void Update(GameTime gameTime, GameContext gameContext)
         {
             Position = new Vector2(mBody.GetPosition().X * Constants.PixelPerMeter, mBody.GetPosition().Y * Constants.PixelPerMeter);
+
+            ApplyBurning(gameTime);
         }
+
+        private void ApplyBurning(GameTime gameTime)
+        {
+            if (IsBurning && this is IWoundable && mBurnTimer > 0.0f)
+            {
+                mBurnTimer -= gameTime.ElapsedGameTime.TotalSeconds;
+                if (mBurnTimer <= 0.0f)
+                {
+                    var woundable = (IWoundable) this;
+                    woundable.TakeDamage(1);
+                    mBurnCounter++;
+                    mBurnTimer = mBurnDelay;
+
+                    if (mBurnCounter == 4)
+                    {
+                        IsBurning = false;
+                        mBurnCounter = 0;
+                    }
+                }
+            }
+        }
+
         public virtual void Draw(SpriteBatch spriteBatch)
         {
             Color drawColor = Color.White;
@@ -98,13 +126,13 @@ namespace ChainTrapper
             }
             spriteBatch.Draw(mSprite, Position, null, drawColor, mBody.GetAngle(), mSprite.Bounds.Center.ToVector2(), Vector2.One, SpriteEffects.None, 0.0f);
         }
-        public bool IsAtPosition(Vector2 position)
+        public bool IsAtPosition(Vector2 position, float tolerance = 1.5f)
         {
-            return Vector2.Distance(Position, position) <= 1.5f;
+            return Vector2.Distance(Position, position) <= tolerance;
         }
         protected bool IsNextTo(GameObject other)
         {
-            return Vector2.Distance(Position, other.Position) <= Constants.PixelPerMeter;
+            return Vector2.Distance(Position, other.Position) <= Constants.PixelPerMeter * 1.5f;
         }
         public void Cleanup()
         {

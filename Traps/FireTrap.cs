@@ -11,9 +11,18 @@ namespace ChainTrapper.Traps
     {
         private Texture2D mFireTexture;
 
-        public FireTrap(World world, Vector2 position, Texture2D texture, Texture2D fireTexture) : base(world, position, texture, 1f, false, true)
+        public FireTrap(World world, Vector2 position, Texture2D texture, Texture2D fireTexture) : base(world, position, texture)
         {
             mFireTexture = fireTexture;
+            CreatePhysicsRepresentation(
+                4f, 
+                1.0f, 
+                0.9f, 
+                0.9f, 
+                0.1f, 
+                false, 
+                true
+            );
         }
 
         public void OnVictimEntered(GameContext gameContext, GameObject victim)

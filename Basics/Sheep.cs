@@ -22,51 +22,49 @@ namespace ChainTrapper
 
         public Sheep(World world, Vector2 position, Texture2D texture) : base(world, position, texture)
         {
-            mDesiredDirection = Helper.Percent(50) ? Helper.RandomDirection() : Vector2.Zero;
-            mDesiredPosition = Helper.Percent(50) ? Helper.RandomPosition() : Position;
-            mBehaviourType = BehaviourType.FollowPath;//(BehaviourType) Helper.RandomInt(3);
-            for (int i = 0; i < 3; i++)
-            {
-                mPath.Add(Helper.RandomPosition());
-            }
-            mCurrentPathNode = 0;
-            mDesiredPosition = mPath[mCurrentPathNode];
+            mDesiredDirection = Vector2.Zero;
+            mDesiredPosition = Position;
+            mBehaviourType = BehaviourType.None;
             Speed = Helper.RandomSpeed();
+            
+            CreatePhysicsRepresentation(
+                2f, 
+                2.0f, 
+                1.9f, 
+                0.9f, 
+                0.1f, 
+                false, 
+                false
+            );
         }
-
+        
         public override void Draw(SpriteBatch spriteBatch)
         {
             base.Draw(spriteBatch);
+            var sheepDebug = "TargetNode: " + mCurrentPathNode.ToString();
             spriteBatch.DrawString(Globals.Globals.DefaultFont, mCurrentHealth.ToString(), Position - (Vector2.UnitY * Constants.PixelPerMeter), Color.White);
+            spriteBatch.DrawString(Globals.Globals.DefaultFont, sheepDebug, Position - (Vector2.UnitY * (Constants.PixelPerMeter * 1.5f)), Color.White);
         }
 
         public override void Update(GameTime gameTime, GameContext gameContext)
         {
             base.Update(gameTime, gameContext);
 
-            if (mBehaviourType == BehaviourType.None)
-                return;
-
-            if (mBehaviourType == BehaviourType.StayAtLocation || mBehaviourType == BehaviourType.FollowPath)
+            if (mBehaviourType == BehaviourType.None) return;
+            
+            if (IsAtPosition(mDesiredPosition, Constants.PixelPerMeter))
             {
-                if (IsAtPosition(mDesiredPosition))
-                {
-                    if (mBehaviourType == BehaviourType.FollowPath)
-                    {
-                        mCurrentPathNode = (mCurrentPathNode + 1) % mPath.Count;
-                        mDesiredPosition = mPath[mCurrentPathNode];
-                    }
-                    mDesiredDirection = Vector2.Zero;
-                }
-                else
-                {
-                    mDesiredDirection = mDesiredPosition - Position;
-                    mDesiredDirection.Normalize();
-                }
+                mCurrentPathNode = (mCurrentPathNode + 1) % Path.Count;
+                mDesiredPosition = Path[mCurrentPathNode];
+                mDesiredDirection = Vector2.Zero;
+            }
+            else
+            {
+                mDesiredDirection = mDesiredPosition - Position;
+                mDesiredDirection.Normalize();
             }
             
-            ApplyForce(mDesiredDirection);
-            
+            ApplyForce(mDesiredDirection * Speed);
         }
 
         public void TakeDamage(int damage)
@@ -78,5 +76,21 @@ namespace ChainTrapper
 
         public bool IsDead => mCurrentHealth <= 0;
         public int CurrentHealth => mCurrentHealth;
+
+        public List<Vector2> Path
+        {
+            get => mPath;
+            set
+            {
+                mPath = value;
+                mCurrentPathNode = 0;
+                mDesiredPosition = mPath[mCurrentPathNode];
+            }
+        }
+
+        public void StartWalk()
+        {
+            mBehaviourType = BehaviourType.FollowPath;
+        }
     }
 }

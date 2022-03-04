@@ -12,6 +12,15 @@ namespace ChainTrapper.Traps
 
         public TimedBomb(World world, Vector2 position, Texture2D texture) : base(world, position, texture)
         {
+            CreatePhysicsRepresentation(
+                2f, 
+                2.0f, 
+                0.9f, 
+                0.9f, 
+                0.1f, 
+                false,
+                false
+            );
         }
 
         public override void Update(GameTime gameTime, GameContext gameContext)

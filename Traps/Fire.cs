@@ -11,9 +11,17 @@ namespace ChainTrapper.Basics
     public class Fire : GameObject, IVictimCollisionListener
     {
         private double mDelay = Helper.RandomInt(5) + 3;
-        public Fire(World world, Vector2 position, Texture2D texture) : base(world, position, texture, 1f, false, true)
+        public Fire(World world, Vector2 position, Texture2D texture) : base(world, position, texture)
         {
-            
+            CreatePhysicsRepresentation(
+                4f, 
+                1.0f, 
+                0.9f, 
+                0.9f, 
+                0.1f, 
+                false, 
+                true
+            );
         }
 
         public void OnVictimEntered(GameContext gameContext, GameObject victim)
@@ -44,7 +52,7 @@ namespace ChainTrapper.Basics
                         for (var index = 0; index < hitCount; index++)
                         {
                             var fixture = fixtures[index];
-                            if (fixture.UserData is Fire)
+                            if (fixture.UserData is Fire || fixture.UserData is Wall)
                             {
                                 mDelay = Helper.RandomInt(5) + 3;
                                 return;

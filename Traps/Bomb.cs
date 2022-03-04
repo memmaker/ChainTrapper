@@ -4,6 +4,7 @@ using Box2DX.Common;
 using Box2DX.Dynamics;
 using ChainTrapper.Basics;
 using ChainTrapper.Globals;
+using ChainTrapper.Traits;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -37,10 +38,12 @@ namespace ChainTrapper.Traps
                 if (fixture.UserData == null) 
                     continue;
                 
-                var gameObject = (GameObject)fixture.UserData;;
-                if (gameObject == this)
+                var userData = fixture.UserData;
+                if (userData == this || !(userData is GameObject))
                     continue;
-
+                
+                var gameObject = (GameObject) userData;
+                
                 var distance = Vector2.Distance(Position, gameObject.Position);
 
                 if (distance <= mExplosionRadius)
@@ -49,6 +52,12 @@ namespace ChainTrapper.Traps
                         (mExplosionRadius - distance) / mExplosionRadius; // 128 - 0..128 -> 0..128 -> 0,0..1,0
                     var forceVector = gameObject.Position - Position;
                     gameObject.ApplyImpulse(forceVector * mStrength * distFactor);
+                    if (gameObject is IWoundable)
+                    {
+                        var woundable = (IWoundable) gameObject;
+                        var damage = (int) (5*distFactor);
+                        woundable.TakeDamage(damage);
+                    }
                 }
             }
         }

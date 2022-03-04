@@ -28,6 +28,19 @@ namespace ChainTrapper.Physics
                 go2 = contact.FixtureB.Body.GetUserData();
             }
 
+            if (go1 is GameObject burn1 && go2 is GameObject burn2)
+            {
+                if (burn1.IsBurning)
+                {
+                    burn2.IsBurning = true;
+                }
+                
+                if (burn2.IsBurning)
+                {
+                    burn1.IsBurning = true;
+                }
+            }
+            
             if (go1 is IVictimCollisionListener listener1 && (go2 is Wolf || go2 is Sheep))
             {
                 listener1.OnVictimEntered(mGameContext, (GameObject)go2);

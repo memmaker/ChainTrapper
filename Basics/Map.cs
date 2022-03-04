@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Xml;
 using Microsoft.Xna.Framework;
 
 namespace ChainTrapper.Basics
 {
-    [Serializable()]
+    [DataContract]
     public class Map
     {
         public Map()
@@ -26,10 +28,9 @@ namespace ChainTrapper.Basics
         // List of Spawn positions for the wolves. Amount of wolves = WolfSpawns.Length
         public List<Vector2> WolfSpawns { get; set; }
 
-
         public void SaveToFile(string filename)
         {
-            Stream stream = File.Open("Maps/map-test.bin", FileMode.Create);
+            Stream stream = File.Open(filename, FileMode.Create);
             var writer = new BinaryWriter(stream);
             
             writer.Write(SheepPath.Count);
@@ -65,7 +66,7 @@ namespace ChainTrapper.Basics
         {
             Map loadedMap = new Map();
             
-            var stream = File.Open("Maps/map-test.bin", FileMode.Open);
+            var stream = File.Open(filename, FileMode.Open);
             var reader = new BinaryReader(stream);
 
             int sheepCount = reader.ReadInt32();

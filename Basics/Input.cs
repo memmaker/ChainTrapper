@@ -16,6 +16,8 @@ namespace ChainTrapper.Basics
         public event EmptyEvent Remove;
         public event EmptyEvent SaveMap;
         
+        public event EmptyEvent BeginSheepWalk;
+        
         public event EmptyEvent LoadMap;
 
         public double mDragDelay = 0.1f;
@@ -75,6 +77,11 @@ namespace ChainTrapper.Basics
             if (keyState.IsKeyDown(Keys.K) && mOldKeyboardState.IsKeyUp(Keys.K))
             {
                 SaveMap?.Invoke();
+            }
+            
+            if (keyState.IsKeyDown(Keys.B) && mOldKeyboardState.IsKeyUp(Keys.B))
+            {
+                BeginSheepWalk?.Invoke();
             }
             
             if (keyState.IsKeyDown(Keys.L) && mOldKeyboardState.IsKeyUp(Keys.L))
