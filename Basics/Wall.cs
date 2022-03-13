@@ -16,6 +16,7 @@ namespace ChainTrapper.Basics
         private Body mBody;
         private Fixture mShape;
         public Vector2 Position { get; set; }
+        public bool IsRayCastHit { get; set; }
 
         public Wall(World world, Vector2 position, Texture2D texture)
         {
@@ -54,7 +55,8 @@ namespace ChainTrapper.Basics
         public void Draw(SpriteBatch spriteBatch)
         {
             Position = mBody.GetPosition().ToScreen();
-            spriteBatch.Draw(mTexture, Position, null, Color.White, mBody.GetAngle(), mTexture.Bounds.Center.ToVector2(), Vector2.One, SpriteEffects.None, 1.0f);
+            if (IsRayCastHit)
+                spriteBatch.Draw(mTexture, Position, null, Color.Red, mBody.GetAngle(), mTexture.Bounds.Center.ToVector2(), Vector2.One, SpriteEffects.None, 1.0f);
         }
     }
 }

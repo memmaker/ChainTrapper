@@ -55,7 +55,11 @@ namespace ChainTrapper
             mContext.ContentManager = Content;
             
             Globals.Globals.DefaultFont = Content.Load<SpriteFont>("Fonts/Default");
-            
+            Globals.Globals.DebugDrawer = new DebugDrawer(GraphicsDevice)
+            {
+                Flags = DebugDraw.DrawFlags.Shape
+            };
+
             StateManager.Push(new MainGameState(mContext));
             //StateManager.Push(new MapEditorState(mContext));
         }
@@ -64,7 +68,7 @@ namespace ChainTrapper
         {
             if (StateManager.IsEmpty)
                 Exit();
-            
+
             StateManager.Update(gameTime);
             base.Update(gameTime);
         }

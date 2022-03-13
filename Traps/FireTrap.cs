@@ -11,7 +11,7 @@ namespace ChainTrapper.Traps
     {
         private Texture2D mFireTexture;
 
-        public FireTrap(World world, Vector2 position, Texture2D texture, Texture2D fireTexture) : base(world, position, texture)
+        public FireTrap(World world, Vector2 drawPosition, Texture2D texture, Texture2D fireTexture) : base(world, drawPosition, texture)
         {
             mFireTexture = fireTexture;
             CreatePhysicsRepresentation(
@@ -27,21 +27,24 @@ namespace ChainTrapper.Traps
 
         public void OnVictimEntered(GameContext gameContext, GameObject victim)
         {
+            if (victim is Player) return;
             ShouldBeRemoved = true;
-            
+
             gameContext.QueuedActions.Enqueue(() =>
             {
+                var fireDist = 1.1f;
+                float sqrt2 = (float) Math.Sqrt(2);
                 var firePositions = new Vector2[]
                 {
-                    new Vector2(Position.X + Constants.PixelPerMeter * 1.5f, Position.Y + Constants.PixelPerMeter * 1.5f),
-                    new Vector2(Position.X + Constants.PixelPerMeter * 1.5f, Position.Y - Constants.PixelPerMeter * 1.5f),
-                    new Vector2(Position.X - Constants.PixelPerMeter * 1.5f, Position.Y + Constants.PixelPerMeter * 1.5f),
-                    new Vector2(Position.X - Constants.PixelPerMeter * 1.5f, Position.Y - Constants.PixelPerMeter * 1.5f),
-                
-                    new Vector2(Position.X + Constants.PixelPerMeter * 1.5f, Position.Y),
-                    new Vector2(Position.X, Position.Y - Constants.PixelPerMeter * 1.5f),
-                    new Vector2(Position.X - Constants.PixelPerMeter * 1.5f, Position.Y),
-                    new Vector2(Position.X, Position.Y + Constants.PixelPerMeter * 1.5f),
+                    new Vector2(DrawPosition.X + Constants.PixelPerMeter * fireDist / sqrt2, DrawPosition.Y + Constants.PixelPerMeter * fireDist / sqrt2),
+                    new Vector2(DrawPosition.X + Constants.PixelPerMeter * fireDist / sqrt2, DrawPosition.Y - Constants.PixelPerMeter * fireDist / sqrt2),
+                    new Vector2(DrawPosition.X - Constants.PixelPerMeter * fireDist / sqrt2, DrawPosition.Y + Constants.PixelPerMeter * fireDist / sqrt2),
+                    new Vector2(DrawPosition.X - Constants.PixelPerMeter * fireDist / sqrt2, DrawPosition.Y - Constants.PixelPerMeter * fireDist / sqrt2),
+                    
+                    new Vector2(DrawPosition.X + Constants.PixelPerMeter * fireDist, DrawPosition.Y),
+                    new Vector2(DrawPosition.X, DrawPosition.Y - Constants.PixelPerMeter * fireDist),
+                    new Vector2(DrawPosition.X - Constants.PixelPerMeter * fireDist, DrawPosition.Y),
+                    new Vector2(DrawPosition.X, DrawPosition.Y + Constants.PixelPerMeter * fireDist),
                 };
 
                 foreach (var firePosition in firePositions)

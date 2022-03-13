@@ -26,7 +26,7 @@ namespace ChainTrapper.GameStates
         
         private Player mPlayer;
         
-        private List<Wolf> mWolves = new List<Wolf>();
+        private List<Enemy> mWolves = new List<Enemy>();
 
         private List<GameObject> mAllGameObjects => mGameContext.AllGameObjects;
         private List<IDrawable> mDrawables = new List<IDrawable>();
@@ -37,7 +37,6 @@ namespace ChainTrapper.GameStates
         private Texture2D mWallTexture;
         private Texture2D mTrapTexture;
 
-        private DebugDrawer mDebugDrawer;
         private Dictionary<string, string> mDebugInfo = new Dictionary<string, string>();
         private SpriteBatch mSpriteBatch;
         private GraphicsDeviceManager mGraphics;
@@ -68,37 +67,35 @@ namespace ChainTrapper.GameStates
             mInput.Movement += MovePlayer;
             mInput.NextWeapon += SelectNextTrap;
             mInput.Fire += PlaceTrap;
-            mInput.BeginSheepWalk += BeginSheepWalk;
         }
-
-        private void BeginSheepWalk()
-        {
-            mAllGameObjects.FindAll(go => go is Sheep).ForEach(sheep => ((Sheep)sheep).StartWalk());
-        }
-
+        
         private void MovePlayer(Vec2 direction)
         {
-            mPlayer.SetVelocity(direction * 7);
+            //mPlayer.SetVelocity(direction * 7);
+            if (mPlayer.IsDead) return;
+            mPlayer.ApplyForce(direction.ToVector2() * 2);
         }
 
         private void SelectNextTrap()
         {
+            if (mPlayer.IsDead) return;
             mSelectedTraps = (TrapType)(((int)mSelectedTraps + 1) % Enum.GetNames(typeof(TrapType)).Length);
         }
 
         private void PlaceTrap()
         {
+            if (mPlayer.IsDead) return;
             GameObject trap = null;
             switch (mSelectedTraps)
             {
                 case TrapType.ExplodingBarrel:
-                    trap = new TimedBomb(PhysicsWorld, mPlayer.Position, mTrapTexture);
+                    trap = new TimedBomb(PhysicsWorld, mPlayer.DrawPosition, mTrapTexture);
                     break;
                 case TrapType.FireTrap:
-                    trap = new FireTrap(PhysicsWorld, mPlayer.Position, mTrapTexture, mTrapTexture);
+                    trap = new FireTrap(PhysicsWorld, mPlayer.DrawPosition, mTrapTexture, mTrapTexture);
                     break;
                 case TrapType.SpikedHole:
-                    trap = new SpikedHole(PhysicsWorld, mPlayer.Position, mTrapTexture);
+                    trap = new SpikedHole(PhysicsWorld, mPlayer.DrawPosition, mTrapTexture);
                     break;
             }
 
@@ -175,9 +172,7 @@ namespace ChainTrapper.GameStates
 
         private void EnablePhysicsDebugDrawer()
         {
-            mDebugDrawer = new DebugDrawer(mGraphics.GraphicsDevice);
-            mDebugDrawer.Flags = Box2DX.Dynamics.DebugDraw.DrawFlags.Shape;
-            PhysicsWorld.SetDebugDraw(mDebugDrawer);
+            PhysicsWorld.SetDebugDraw(Globals.Globals.DebugDrawer);
         }
 
         private void LoadMap(string filename)
@@ -230,8 +225,6 @@ namespace ChainTrapper.GameStates
             mArrowTexture.SetData<Color>(blackPixels);
             
             mPlayer = new Player(PhysicsWorld, new Vector2(100, 100), texture);
-            mDebugInfo.Add("Pl_Pos", mPlayer.Position.ToString());
-            mDebugInfo.Add("Trap", "");
             mAllGameObjects.Add(mPlayer);
 
             foreach (var wall in mCurrentMap.Walls)
@@ -250,17 +243,18 @@ namespace ChainTrapper.GameStates
 
             foreach (var wolfSpawn in mCurrentMap.WolfSpawns)
             {
-                var enemy = new Wolf(PhysicsWorld, wolfSpawn, blueTexture);
+                var enemy = new Enemy(PhysicsWorld, wolfSpawn, blueTexture, mPlayer);
                 mWolves.Add(enemy);
                 mAllGameObjects.Add(enemy);
             }
-            
+            /*
             for (int i = 0; i < 7; i++)
             {
-                var sheep = new Sheep(PhysicsWorld, mCurrentMap.SheepPath[0], whiteTexture);
+                var sheep = new BreadCrumb(PhysicsWorld, mCurrentMap.SheepPath[0], whiteTexture);
                 sheep.Path = mCurrentMap.SheepPath;
                 mAllGameObjects.Add(sheep);
             }
+            */
         }
         public void Update(GameTime gameTime)
         {
@@ -287,8 +281,8 @@ namespace ChainTrapper.GameStates
                 }
             }
       
-            mDebugInfo["Pl_Pos"] = mPlayer.Position.ToString();
-            mDebugInfo["Trap"] = Enum.GetName(typeof(TrapType), mSelectedTraps);
+            Debug("Trap", Enum.GetName(typeof(TrapType), mSelectedTraps));
+            Debug("Score", Globals.Globals.CurrentLevelScore.ToString());
         }
         private void PhysicsUpdate()
         {
@@ -320,7 +314,7 @@ namespace ChainTrapper.GameStates
             DebugDraw();
             
             // physics
-            mDebugDrawer.FlushDrawing();
+            Globals.Globals.DebugDrawer.FlushDrawing();
             
             mSpriteBatch.End();
         }

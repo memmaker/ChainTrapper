@@ -10,7 +10,7 @@ namespace ChainTrapper.Traps
     {
         private double mDelay = 3.0f;
 
-        public TimedBomb(World world, Vector2 position, Texture2D texture) : base(world, position, texture)
+        public TimedBomb(World world, Vector2 drawPosition, Texture2D texture) : base(world, drawPosition, texture)
         {
             CreatePhysicsRepresentation(
                 2f, 

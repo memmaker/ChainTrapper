@@ -91,6 +91,39 @@ namespace ChainTrapper
             }
         }
 
+        public void DrawVectorAsArrow(Vec2 source, Vec2 direction, Box2DX.Dynamics.Color color)
+        {
+            var arrowTipLength = 0.2f;
+            var target = source + direction;
+            DrawSegment(source, target, color);
+            var orthogonalDir = new Vec2(direction.Y, -direction.X);
+            var inverseDir = direction * -1;
+            var leftPointDir = (inverseDir + orthogonalDir);
+            leftPointDir.Normalize();
+            
+            leftPointDir *= arrowTipLength;
+            
+            var rightPointDir = (inverseDir - orthogonalDir);
+            rightPointDir.Normalize();
+            rightPointDir *= arrowTipLength;
+            
+            DrawSegment(target, target + leftPointDir, color);
+            DrawSegment(target, target + rightPointDir, color);
+        }
+        
+        public void DrawPoint(Vec2 point, Box2DX.Dynamics.Color color)
+        {
+            float offset = 0.1f;
+            DrawSegment(
+                new Vec2(point.X - offset, point.Y - offset),
+                new Vec2(point.X + offset, point.Y + offset), 
+                color);
+            DrawSegment(
+                new Vec2(point.X + offset, point.Y - offset),
+                new Vec2(point.X - offset, point.Y + offset), 
+                color);
+        }
+
         public override void DrawXForm(XForm xf)
         {
             throw new NotImplementedException();

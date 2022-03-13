@@ -9,7 +9,7 @@ namespace ChainTrapper.Traps
 {
     public class RemoteBomb : Bomb, ITriggered
     {
-        public RemoteBomb(World world, Vector2 position, Texture2D texture) : base(world, position, texture)
+        public RemoteBomb(World world, Vector2 drawPosition, Texture2D texture) : base(world, drawPosition, texture)
         {
         }
 

@@ -22,7 +22,8 @@ namespace ChainTrapper
     public class GameObject : IDrawable
     {
         protected Texture2D mSprite;
-        public Vector2 Position { get; set; }
+        public Vector2 DrawPosition { get; set; }
+        public Vec2 Position => mBody.GetPosition();
         public float Speed { get; set; }
         public bool ShouldBeRemoved { get; set; }
         public float Rotation => mBody.GetAngle();
@@ -35,17 +36,18 @@ namespace ChainTrapper
         private double mBurnDelay = 3.0d;
         private int mBurnCounter = 0;
         private double mBurnTimer = 3.0d;
+        protected float mBurnSpeedFactor = 0.7f;
 
-        public GameObject(World world, Vector2 position, Texture2D texture)
+        public GameObject(World world, Vector2 drawPosition, Texture2D texture)
         {
             ShouldBeRemoved = false;
             Speed = 3;
-            Position = position;
+            DrawPosition = drawPosition;
             mSprite = texture;
             mWorld = world;
         }
 
-        public void CreatePhysicsRepresentation(float mass, float density, float damping, float friction, float restitution, bool isBullet, bool isSensor)
+        public void CreatePhysicsRepresentation(float mass, float density, float damping, float friction, float restitution, bool isBullet, bool isSensor, float radius = 0.5f)
         {
             // CREATING A DYNAMIC BODY
             BodyDef dynamicBodyDef = new BodyDef()
@@ -55,9 +57,9 @@ namespace ChainTrapper
                     Center = Constants.UnitCenter, 
                     Mass = mass
                 },
-                Position = new Vec2(Position.X / Constants.PixelPerMeter,Position.Y / Constants.PixelPerMeter),
+                Position = new Vec2(DrawPosition.X / Constants.PixelPerMeter,DrawPosition.Y / Constants.PixelPerMeter),
                 IsBullet = isBullet,
-                LinearDamping = damping
+                LinearDamping = damping,
             };
             
             mBody = mWorld.CreateBody(dynamicBodyDef);
@@ -67,7 +69,7 @@ namespace ChainTrapper
                 Density = density,
                 Friction = friction,
                 Type = ShapeType.CircleShape,
-                Radius = 0.5f,
+                Radius = radius,
                 IsSensor = isSensor,
                 Restitution = restitution
             };
@@ -80,10 +82,6 @@ namespace ChainTrapper
             mBody.ApplyImpulse(change.ToVec2(), mBody.GetWorldCenter());
         }
 
-        public void SetVelocity(Vec2 velocity)
-        {
-            mBody.SetLinearVelocity(velocity);
-        }
         internal void ApplyForce(Vector2 change)
         {
             mBody.ApplyForce(change.ToVec2(), mBody.GetWorldCenter());
@@ -91,8 +89,8 @@ namespace ChainTrapper
 
         public virtual void Update(GameTime gameTime, GameContext gameContext)
         {
-            Position = new Vector2(mBody.GetPosition().X * Constants.PixelPerMeter, mBody.GetPosition().Y * Constants.PixelPerMeter);
-
+            mBody.SetAngle((float) Helper.AngleFromVector(mBody.GetLinearVelocity()));
+            DrawPosition = new Vector2(mBody.GetPosition().X * Constants.PixelPerMeter, mBody.GetPosition().Y * Constants.PixelPerMeter);
             ApplyBurning(gameTime);
         }
 
@@ -124,15 +122,15 @@ namespace ChainTrapper
             {
                 drawColor = Helper.Percent(50) ? Color.OrangeRed : Color.Red;
             }
-            spriteBatch.Draw(mSprite, Position, null, drawColor, mBody.GetAngle(), mSprite.Bounds.Center.ToVector2(), Vector2.One, SpriteEffects.None, 0.0f);
+            //spriteBatch.Draw(mSprite, DrawPosition, null, drawColor, Rotation, mSprite.Bounds.Center.ToVector2(), Vector2.One, SpriteEffects.None, 0.0f);
         }
         public bool IsAtPosition(Vector2 position, float tolerance = 1.5f)
         {
-            return Vector2.Distance(Position, position) <= tolerance;
+            return Vector2.Distance(DrawPosition, position) <= tolerance;
         }
         protected bool IsNextTo(GameObject other)
         {
-            return Vector2.Distance(Position, other.Position) <= Constants.PixelPerMeter * 1.5f;
+            return Vector2.Distance(DrawPosition, other.DrawPosition) <= Constants.PixelPerMeter * 1.5f;
         }
         public void Cleanup()
         {
@@ -150,6 +148,36 @@ namespace ChainTrapper
             float angle = (float) Math.Atan2(direction.Y, direction.X);
             mBody.SetFixedRotation(false);
             mBody.SetAngle(angle);
+        }
+
+        protected void ApplySteering(Vec2 desiredVelocity)
+        {
+            var steeringForce = desiredVelocity - mBody.GetLinearVelocity();
+            var maxSteeringForceforce = 64f;
+            if (steeringForce.Length() > maxSteeringForceforce)
+            {
+                steeringForce.Normalize();
+                steeringForce *= maxSteeringForceforce;
+            }
+            Globals.Globals.DebugDrawer.DrawVectorAsArrow(mBody.GetPosition(), steeringForce, new Box2DX.Dynamics.Color(1.0f, 1.0f, 1.0f));
+            mBody.ApplyForce(steeringForce, mBody.GetWorldCenter());
+        }
+
+        protected bool CanSeeGameObject(GameObject go)
+        {
+            var hitFixtures = mWorld.Raycast(DrawPosition, go.DrawPosition);
+
+            foreach (var hitFixture in hitFixtures)
+            {
+                var userData = hitFixture.UserData;
+                if (userData is Wall) return false;
+                if (userData is GameObject goFound && go == goFound)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

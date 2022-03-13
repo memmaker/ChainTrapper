@@ -7,7 +7,7 @@ namespace ChainTrapper.Traps
 {
     public class SpikedHole : GameObject, IVictimCollisionListener
     {
-        public SpikedHole(World world, Vector2 position, Texture2D texture) : base(world, position, texture)
+        public SpikedHole(World world, Vector2 drawPosition, Texture2D texture) : base(world, drawPosition, texture)
         {
             CreatePhysicsRepresentation(
                 4f, 
@@ -26,7 +26,16 @@ namespace ChainTrapper.Traps
             // Play Death animation
             // Change trap display
             //
-            victim.Destroy();
+            if (!(victim is Player))
+            {
+                victim.Destroy();
+            }
+            //ShouldBeRemoved = true;
+        }
+
+        public void OnVictimLeft(GameContext gameContext, GameObject victim)
+        {
+            
         }
     }
 }

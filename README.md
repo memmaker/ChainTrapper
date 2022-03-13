@@ -34,7 +34,27 @@ Die Wölfe ignorieren den Spieler vorerst.
 
 ## Skalierung
 
-32 Pixel = 1 Meter
+64 Pixel = 1 Meter
+
+Zielauflösung: 1920x1080
+
+
+## Level
+
+10 Level
+
+1-2 Level - Spike Hole
+3-4 Level - + Exploding Barrel
+5+  Level - + Fire Trap
+
+Man wählt die Fallen vor Beginn eines Levels aus.
+Und hat generell weniger Fallen als es Wölfe gibt.
+
+Wölfe pro Level 1-10
+20 Schafe im ersten Level. Schafsmenge wird von Level zu Level übernommen.
+
+Punktabzug für Schaden an Schafen.
+Bonuspunkte für Stil -> Kettenreaktionen.
 
 ## Animationen
 

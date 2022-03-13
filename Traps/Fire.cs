@@ -11,7 +11,7 @@ namespace ChainTrapper.Basics
     public class Fire : GameObject, IVictimCollisionListener
     {
         private double mDelay = Helper.RandomInt(5) + 3;
-        public Fire(World world, Vector2 position, Texture2D texture) : base(world, position, texture)
+        public Fire(World world, Vector2 drawPosition, Texture2D texture) : base(world, drawPosition, texture)
         {
             CreatePhysicsRepresentation(
                 4f, 
@@ -29,6 +29,11 @@ namespace ChainTrapper.Basics
             victim.IsBurning = true;
         }
 
+        public void OnVictimLeft(GameContext gameContext, GameObject victim)
+        {
+            
+        }
+
         public override void Update(GameTime gameTime, GameContext gameContext)
         {
             if (mDelay > 0.0f)
@@ -42,7 +47,7 @@ namespace ChainTrapper.Basics
                     }
                     else
                     {
-                        Vector2 position = Position + (Helper.RandomDirection() * (Constants.PixelPerMeter * 1.5f));
+                        Vector2 position = DrawPosition + (Helper.RandomDirection() * (Constants.PixelPerMeter * 1.5f));
                         Fixture[] fixtures = new Fixture[10];
                         int hitCount = mWorld.Query(new AABB()
                         {

@@ -7,7 +7,7 @@ namespace ChainTrapper
 {
     public class Projectile : GameObject
     {
-        public Projectile(World world, Vector2 position, Texture2D texture) : base(world, position, texture)
+        public Projectile(World world, Vector2 drawPosition, Texture2D texture) : base(world, drawPosition, texture)
         {
             CreatePhysicsRepresentation(
                 0.2f, 

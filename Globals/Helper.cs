@@ -1,5 +1,7 @@
 using System;
+using Box2DX.Common;
 using Microsoft.Xna.Framework;
+using Math = System.Math;
 
 namespace ChainTrapper.Globals
 {
@@ -51,6 +53,12 @@ namespace ChainTrapper.Globals
         public static int RotatePixelY(int x, int y, int a, int b, float angle)
         {
             return (int)((x - a) * Math.Sin(angle) + (y - b) * Math.Cos(angle) + b);
+        }
+
+        public static double AngleFromVector(Vec2 vec)
+        {
+            var angle = Math.Atan2(vec.Y, vec.X);
+            return angle;
         }
     }
 }

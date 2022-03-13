@@ -41,12 +41,12 @@ namespace ChainTrapper.Physics
                 }
             }
             
-            if (go1 is IVictimCollisionListener listener1 && (go2 is Wolf || go2 is Sheep))
+            if (go1 is IVictimCollisionListener listener1 && (go2 is Enemy || go2 is BreadCrumb || go2 is Player))
             {
                 listener1.OnVictimEntered(mGameContext, (GameObject)go2);
             }
             
-            if (go2 is IVictimCollisionListener listener2 && (go1 is Wolf || go1 is Sheep))
+            if (go2 is IVictimCollisionListener listener2 && (go1 is Enemy || go1 is BreadCrumb || go1 is Player))
             {
                 listener2.OnVictimEntered(mGameContext, (GameObject)go1);
             }
@@ -66,7 +66,27 @@ namespace ChainTrapper.Physics
         
         public void EndContact(Contact contact)
         {
+            object go1 = null, go2 = null;
             
+            if (contact.FixtureA.Body.GetUserData() != null)
+            {
+                go1 = contact.FixtureA.Body.GetUserData();
+            }
+            
+            if (contact.FixtureB.Body.GetUserData() != null)
+            {
+                go2 = contact.FixtureB.Body.GetUserData();
+            }
+            
+            if (go1 is IVictimCollisionListener listener1 && (go2 is Enemy || go2 is BreadCrumb || go2 is Player))
+            {
+                listener1.OnVictimLeft(mGameContext, (GameObject)go2);
+            }
+            
+            if (go2 is IVictimCollisionListener listener2 && (go1 is Enemy || go1 is BreadCrumb || go1 is Player))
+            {
+                listener2.OnVictimLeft(mGameContext, (GameObject)go1);
+            }
         }
 
         public void PreSolve(Contact contact, Manifold oldManifold)
