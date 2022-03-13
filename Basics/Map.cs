@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization;
@@ -13,29 +14,28 @@ namespace ChainTrapper.Basics
     {
         public Map()
         {
-            SheepPath = new List<Vector2>();
+            EnemyPath = new List<Vector2>();
             WolfSpawns = new List<Vector2>();
             Walls = new List<Rectangle>();
+            GrassRects = new List<Rectangle>();
         }
-
         public List<Rectangle> Walls { get; set; }
 
-        public int SheepCount { get; set; }
-        
-        // By convention: SheepPath[0] = Start, SheepPath[Length-1] = Goal
-        public List<Vector2> SheepPath { get; set; } 
+        // By convention: EnemyPath[0] = Start, EnemyPath[Length-1] = Goal
+        public List<Vector2> EnemyPath { get; set; } 
         
         // List of Spawn positions for the wolves. Amount of wolves = WolfSpawns.Length
         public List<Vector2> WolfSpawns { get; set; }
+        public List<Rectangle> GrassRects { get; set; }
 
         public void SaveToFile(string filename)
         {
             Stream stream = File.Open(filename, FileMode.Create);
             var writer = new BinaryWriter(stream);
             
-            writer.Write(SheepPath.Count);
+            writer.Write(EnemyPath.Count);
             
-            foreach (var sheepNode in SheepPath)
+            foreach (var sheepNode in EnemyPath)
             {
                 writer.Write(sheepNode.X);
                 writer.Write(sheepNode.Y);
@@ -59,6 +59,16 @@ namespace ChainTrapper.Basics
                 writer.Write(wall.Height);
             }
             
+            writer.Write(GrassRects.Count);
+            
+            foreach (var grassRect in GrassRects)
+            {
+                writer.Write(grassRect.X);
+                writer.Write(grassRect.Y);
+                writer.Write(grassRect.Width);
+                writer.Write(grassRect.Height);
+            }
+            
             stream.Close();
         }
 
@@ -76,7 +86,7 @@ namespace ChainTrapper.Basics
                 float x = reader.ReadSingle();
                 float y = reader.ReadSingle();
                 
-                loadedMap.SheepPath.Add(new Vector2(x, y));
+                loadedMap.EnemyPath.Add(new Vector2(x, y));
             }
             
             int wolfCount = reader.ReadInt32();
@@ -100,6 +110,19 @@ namespace ChainTrapper.Basics
                 int height = reader.ReadInt32();
                 
                 loadedMap.Walls.Add(new Rectangle(x, y, width, height));
+            }
+            
+            int grassCount = reader.ReadInt32();
+
+            for (int i = 0; i < grassCount; i++)
+            {
+                int x = reader.ReadInt32();
+                int y = reader.ReadInt32();
+                
+                int width = reader.ReadInt32();
+                int height = reader.ReadInt32();
+                
+                loadedMap.GrassRects.Add(new Rectangle(x, y, width, height));
             }
             
             stream.Close();

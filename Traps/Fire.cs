@@ -8,7 +8,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace ChainTrapper.Basics
 {
-    public class Fire : GameObject, IVictimCollisionListener
+    public class Fire : GameObject, IGameObjectCollisionListener
     {
         private double mDelay = Helper.RandomInt(5) + 3;
         public Fire(World world, Vector2 drawPosition, Texture2D texture) : base(world, drawPosition, texture)
@@ -24,12 +24,12 @@ namespace ChainTrapper.Basics
             );
         }
 
-        public void OnVictimEntered(GameContext gameContext, GameObject victim)
+        public void OnCollisionBegin(GameContext gameContext, GameObject go)
         {
-            victim.IsBurning = true;
+            go.IsBurning = true;
         }
 
-        public void OnVictimLeft(GameContext gameContext, GameObject victim)
+        public void OnCollisionEnd(GameContext gameContext, GameObject go)
         {
             
         }

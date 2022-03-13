@@ -14,7 +14,7 @@ using Math = System.Math;
 
 namespace ChainTrapper.GameStates
 {
-    public enum ObjectTypes { WolfSpawn, SheepPath, Walls }
+    public enum ObjectTypes { WolfSpawn, EnemyPath, Grass, Walls }
     public enum EditorMode { Create, Modify }
     public class MapEditorState : IGameState
     {
@@ -24,6 +24,7 @@ namespace ChainTrapper.GameStates
         private DebugDrawer mDebugDrawer;
         private Color mWhiteColor = new Color(1.0f, 1.0f, 1.0f);
         private Color mGrayColor = new Color(0.3f, 0.3f, 0.3f);
+        private Color mGreenColor = new Color(0.3f, 1.0f, 0.3f);
         private Color mRedColor = new Color(1.0f, 0.15f, 0.15f);
         private ObjectTypes mObjectType = ObjectTypes.WolfSpawn;
         private EditorMode mEditorMode = EditorMode.Create;
@@ -82,13 +83,17 @@ namespace ChainTrapper.GameStates
                         if (mCurrentMap.WolfSpawns.Count == 0) return;
                         mCurrentMap.WolfSpawns.RemoveAt(mCurrentMap.WolfSpawns.Count - 1);
                         break;
-                    case ObjectTypes.SheepPath:
-                        if (mCurrentMap.SheepPath.Count == 0) return;
-                        mCurrentMap.SheepPath.RemoveAt(mCurrentMap.SheepPath.Count - 1);
+                    case ObjectTypes.EnemyPath:
+                        if (mCurrentMap.EnemyPath.Count == 0) return;
+                        mCurrentMap.EnemyPath.RemoveAt(mCurrentMap.EnemyPath.Count - 1);
                         break;
                     case ObjectTypes.Walls:
                         if (mCurrentMap.Walls.Count == 0) return;
                         mCurrentMap.Walls.RemoveAt(mCurrentMap.Walls.Count - 1);
+                        break;
+                    case ObjectTypes.Grass:
+                        if (mCurrentMap.GrassRects.Count == 0) return;
+                        mCurrentMap.GrassRects.RemoveAt(mCurrentMap.GrassRects.Count - 1);
                         break;
                 }
             }
@@ -99,11 +104,14 @@ namespace ChainTrapper.GameStates
                     case ObjectTypes.WolfSpawn:
                         mCurrentMap.WolfSpawns.RemoveAt(mSelectedIndex);
                         break;
-                    case ObjectTypes.SheepPath:
-                        mCurrentMap.SheepPath.RemoveAt(mSelectedIndex);
+                    case ObjectTypes.EnemyPath:
+                        mCurrentMap.EnemyPath.RemoveAt(mSelectedIndex);
                         break;
                     case ObjectTypes.Walls:
                         mCurrentMap.Walls.RemoveAt(mSelectedIndex);
+                        break;
+                    case ObjectTypes.Grass:
+                        mCurrentMap.GrassRects.RemoveAt(mSelectedIndex);
                         break;
                 }
                 mSelectedIndex--;
@@ -146,11 +154,14 @@ namespace ChainTrapper.GameStates
                 case ObjectTypes.WolfSpawn:
                     SelectWolfSpawnAt(position);
                     break;
-                case ObjectTypes.SheepPath:
+                case ObjectTypes.EnemyPath:
                     SelectSheepPathAt(position);
                     break;
                 case ObjectTypes.Walls:
                     SelectWallAt(position);
+                    break;
+                case ObjectTypes.Grass:
+                    SelectGrassAt(position);
                     break;
             }
         }
@@ -170,11 +181,26 @@ namespace ChainTrapper.GameStates
             mSelectedIndex = -1;
         }
 
+        private void SelectGrassAt(Vector2 position)
+        {
+            for (var index = 0; index < mCurrentMap.GrassRects.Count; index++)
+            {
+                var grassRect = mCurrentMap.GrassRects[index];
+                if (grassRect.Contains(position))
+                {
+                    mSelectedIndex = index;
+                    return;
+                }
+            }
+
+            mSelectedIndex = -1;
+        }
+
         private void SelectSheepPathAt(Vector2 position)
         {
-            for (var index = 0; index < mCurrentMap.SheepPath.Count; index++)
+            for (var index = 0; index < mCurrentMap.EnemyPath.Count; index++)
             {
-                var sheepPath = mCurrentMap.SheepPath[index];
+                var sheepPath = mCurrentMap.EnemyPath[index];
                 if (Vector2.Distance(position, sheepPath) < Constants.PixelPerMeter * 0.5f)
                 {
                     mSelectedIndex = index;
@@ -207,8 +233,11 @@ namespace ChainTrapper.GameStates
                 case ObjectTypes.WolfSpawn:
                     mCurrentMap.WolfSpawns.Add(position);
                     break;
-                case ObjectTypes.SheepPath:
-                    mCurrentMap.SheepPath.Add(position);
+                case ObjectTypes.EnemyPath:
+                    mCurrentMap.EnemyPath.Add(position);
+                    break;
+                case ObjectTypes.Grass:
+                    BeginRubberRect(position);
                     break;
                 case ObjectTypes.Walls:
                     BeginRubberRect(position);
@@ -225,13 +254,15 @@ namespace ChainTrapper.GameStates
 
         private void OnMouseReleased(Vector2 position)
         {
-            if (mObjectType == ObjectTypes.Walls && mEditorMode == EditorMode.Create)
+            if (mEditorMode == EditorMode.Create)
             {
                 mRectCorner2 = position;
                 mDrawRubberRect = false;
-                // Create a wall from the corners now..
-
-                CreateWallFromRubberRect();
+                // Create an object from the corners now..
+                if (mObjectType == ObjectTypes.Walls)
+                    CreateWallFromRubberRect();
+                else if (mObjectType == ObjectTypes.Grass)
+                    CreateGrassFromRubberRect();
             }
 
             if (mDragSelection)
@@ -243,8 +274,8 @@ namespace ChainTrapper.GameStates
                         case ObjectTypes.WolfSpawn:
                             mCurrentMap.WolfSpawns[mSelectedIndex] = position;
                             break;
-                        case ObjectTypes.SheepPath:
-                            mCurrentMap.SheepPath[mSelectedIndex] = position;
+                        case ObjectTypes.EnemyPath:
+                            mCurrentMap.EnemyPath[mSelectedIndex] = position;
                             break;
                         case ObjectTypes.Walls:
                             var currentWall = mCurrentMap.Walls[mSelectedIndex];
@@ -253,10 +284,32 @@ namespace ChainTrapper.GameStates
                             mCurrentMap.Walls.RemoveAt(mSelectedIndex);
                             mCurrentMap.Walls.Insert(mSelectedIndex, currentWall);
                             break;
+                        case ObjectTypes.Grass:
+                            var currentGrass = mCurrentMap.GrassRects[mSelectedIndex];
+                            var offsetGrass = position - currentGrass.Center.ToVector2();
+                            currentGrass.Offset(offsetGrass);
+                            mCurrentMap.GrassRects.RemoveAt(mSelectedIndex);
+                            mCurrentMap.GrassRects.Insert(mSelectedIndex, currentGrass);
+                            break;
                     }
                 }
                 mDragSelection = false;
             }
+        }
+
+        private void CreateGrassFromRubberRect()
+        {
+            var centerPos = (mRectCorner1 + mRectCorner2) * 0.5f;
+            int width = (int) Math.Abs(mRectCorner1.X - mRectCorner2.X);
+            int height = (int) Math.Abs(mRectCorner1.Y - mRectCorner2.Y);
+            mCurrentMap.GrassRects.Add(
+                new Rectangle(
+                    (int) (centerPos.X - (width * 0.5f)),
+                    (int) (centerPos.Y - (height * 0.5f)),
+                    width,
+                    height
+                )
+            );
         }
 
         private void CreateWallFromRubberRect()
@@ -307,9 +360,11 @@ namespace ChainTrapper.GameStates
 
             DrawWolfSpawns(spriteBatch);
 
-            DrawSheepPath(spriteBatch);
+            DrawPath(spriteBatch);
 
             DrawWalls();
+            
+            DrawGrass();
 
             if (mDrawRubberRect)
             {
@@ -360,16 +415,45 @@ namespace ChainTrapper.GameStates
                 mDebugDrawer.DrawPolygon(vertices, 4, drawColor);
             }
         }
-
-        private void DrawSheepPath(SpriteBatch spriteBatch)
+        
+        private void DrawGrass()
         {
-            for (var index = 0; index < mCurrentMap.SheepPath.Count; index++)
+            for (var index = 0; index < mCurrentMap.GrassRects.Count; index++)
             {
-                var sheepWaypoint = mCurrentMap.SheepPath[index];
+                var grassRect = mCurrentMap.GrassRects[index];
+                
+                Color drawColor = mGreenColor;
+                if (mObjectType == ObjectTypes.Walls && mSelectedIndex == index)
+                {
+                    drawColor = mWhiteColor;
+                    if (mDragSelection)
+                    {
+                        var offset = mLastMousePosition - grassRect.Center.ToVector2();
+                        grassRect.Offset(offset);
+                    }
+                }
+                Vec2[] vertices = new[]
+                {
+                    grassRect.Location.ToVector2().ToPhysics(),
+                    new Vec2(grassRect.Right / (float) Constants.PixelPerMeter, grassRect.Top / (float) Constants.PixelPerMeter),
+                    new Vec2(grassRect.Right / (float) Constants.PixelPerMeter,
+                        grassRect.Bottom / (float) Constants.PixelPerMeter),
+                    new Vec2(grassRect.Left / (float) Constants.PixelPerMeter,
+                        grassRect.Bottom / (float) Constants.PixelPerMeter),
+                };
+                mDebugDrawer.DrawPolygon(vertices, 4, drawColor);
+            }
+        }
+
+        private void DrawPath(SpriteBatch spriteBatch)
+        {
+            for (var index = 0; index < mCurrentMap.EnemyPath.Count; index++)
+            {
+                var sheepWaypoint = mCurrentMap.EnemyPath[index];
                 Color drawColor = mGrayColor;
                 var drawPosition = sheepWaypoint.ToPhysics();
                 
-                if (mObjectType == ObjectTypes.SheepPath && mSelectedIndex == index)
+                if (mObjectType == ObjectTypes.EnemyPath && mSelectedIndex == index)
                 {
                     drawColor = mWhiteColor;
                     if (mDragSelection)
@@ -381,7 +465,7 @@ namespace ChainTrapper.GameStates
                 mDebugDrawer.DrawCircle(drawPosition, 0.5f, drawColor);
                 if (index > 0)
                 {
-                    var previousPoint = mCurrentMap.SheepPath[index - 1];
+                    var previousPoint = mCurrentMap.EnemyPath[index - 1];
                     mDebugDrawer.DrawSegment(previousPoint.ToPhysics(), drawPosition, mGrayColor);
                 }
 

@@ -10,5 +10,7 @@ namespace ChainTrapper.Globals
         public static int ScreenHeight { get; set; }
         public static int CurrentLevelScore { get; set; }
         public static DebugDrawer DebugDrawer { get; set; }
+
+        public static bool DebugEnabled = false;
     }
 }

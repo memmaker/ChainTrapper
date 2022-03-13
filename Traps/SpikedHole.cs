@@ -5,7 +5,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace ChainTrapper.Traps
 {
-    public class SpikedHole : GameObject, IVictimCollisionListener
+    public class SpikedHole : GameObject, IGameObjectCollisionListener
     {
         public SpikedHole(World world, Vector2 drawPosition, Texture2D texture) : base(world, drawPosition, texture)
         {
@@ -20,20 +20,20 @@ namespace ChainTrapper.Traps
             );
         }
 
-        public void OnVictimEntered(GameContext gameContext, GameObject victim)
+        public void OnCollisionBegin(GameContext gameContext, GameObject go)
         {
-            // Kill the victim
+            // Kill the go
             // Play Death animation
             // Change trap display
             //
-            if (!(victim is Player))
+            if (!(go is Player))
             {
-                victim.Destroy();
+                go.Destroy();
             }
             //ShouldBeRemoved = true;
         }
 
-        public void OnVictimLeft(GameContext gameContext, GameObject victim)
+        public void OnCollisionEnd(GameContext gameContext, GameObject go)
         {
             
         }

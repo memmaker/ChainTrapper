@@ -27,8 +27,11 @@ namespace ChainTrapper
         public float Speed { get; set; }
         public bool ShouldBeRemoved { get; set; }
         public float Rotation => mBody.GetAngle();
+        public Vec2 Velocity => mBody.GetLinearVelocity();
         public bool IsBurning { get; set; }
         public Body Body => mBody;
+
+        public Grass Grass => mGrass;
 
         protected World mWorld;
         protected Fixture mShape;
@@ -37,6 +40,7 @@ namespace ChainTrapper
         private int mBurnCounter = 0;
         private double mBurnTimer = 3.0d;
         protected float mBurnSpeedFactor = 0.7f;
+        private Grass mGrass;
 
         public GameObject(World world, Vector2 drawPosition, Texture2D texture)
         {
@@ -71,7 +75,8 @@ namespace ChainTrapper
                 Type = ShapeType.CircleShape,
                 Radius = radius,
                 IsSensor = isSensor,
-                Restitution = restitution
+                Restitution = restitution,
+                //LocalPosition = new Vec2(0, radius/2.0f)
             };
             mShape = mBody.CreateFixture(shapeDef);
             mShape.UserData = this;
@@ -86,11 +91,16 @@ namespace ChainTrapper
         {
             mBody.ApplyForce(change.ToVec2(), mBody.GetWorldCenter());
         }
+        
+        internal void ApplyForce(Vec2 change)
+        {
+            mBody.ApplyForce(change, mBody.GetWorldCenter());
+        }
 
         public virtual void Update(GameTime gameTime, GameContext gameContext)
         {
-            mBody.SetAngle((float) Helper.AngleFromVector(mBody.GetLinearVelocity()));
-            DrawPosition = new Vector2(mBody.GetPosition().X * Constants.PixelPerMeter, mBody.GetPosition().Y * Constants.PixelPerMeter);
+            mBody.SetAngle((float) Helper.AngleFromVector(Velocity));
+            DrawPosition = Position.ToScreen();
             ApplyBurning(gameTime);
         }
 
@@ -122,11 +132,17 @@ namespace ChainTrapper
             {
                 drawColor = Helper.Percent(50) ? Color.OrangeRed : Color.Red;
             }
-            //spriteBatch.Draw(mSprite, DrawPosition, null, drawColor, Rotation, mSprite.Bounds.Center.ToVector2(), Vector2.One, SpriteEffects.None, 0.0f);
+
+            spriteBatch.Draw(mSprite, DrawPosition, null, drawColor, 0.0f, mSprite.Bounds.Center.ToVector2(), Vector2.One, SpriteEffects.None, 0.0f);
         }
         public bool IsAtPosition(Vector2 position, float tolerance = 1.5f)
         {
             return Vector2.Distance(DrawPosition, position) <= tolerance;
+        }
+        
+        public bool IsAtPosition(Vec2 position, float tolerance = 0.5f)
+        {
+            return Vec2.Distance(Position, position) <= tolerance;
         }
         protected bool IsNextTo(GameObject other)
         {
@@ -169,15 +185,29 @@ namespace ChainTrapper
 
             foreach (var hitFixture in hitFixtures)
             {
+                if (hitFixture == mShape) continue;
+                
                 var userData = hitFixture.UserData;
                 if (userData is Wall) return false;
                 if (userData is GameObject goFound && go == goFound)
                 {
+                    if (goFound is Player player)
+                    {
+                        if (player.IsHidingInGrass && player.Grass != Grass)
+                        {
+                            return false;
+                        }
+                    }
                     return true;
                 }
             }
 
             return false;
+        }
+
+        public void SetGrass(Grass grass)
+        {
+            mGrass = grass;
         }
     }
 }

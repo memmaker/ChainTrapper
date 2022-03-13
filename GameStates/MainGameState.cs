@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using Box2DX.Collision;
 using Box2DX.Common;
 using Box2DX.Dynamics;
@@ -64,16 +65,11 @@ namespace ChainTrapper.GameStates
             mGameContext.AllGameObjects = new List<GameObject>();
             mGameContext.QueuedActions = new Queue<Action>();
     
-            mInput.Movement += MovePlayer;
             mInput.NextWeapon += SelectNextTrap;
             mInput.Fire += PlaceTrap;
-        }
-        
-        private void MovePlayer(Vec2 direction)
-        {
-            //mPlayer.SetVelocity(direction * 7);
-            if (mPlayer.IsDead) return;
-            mPlayer.ApplyForce(direction.ToVector2() * 2);
+            mInput.Movement += direction => mPlayer.MovePlayer(direction);
+            mInput.Jump += () => mPlayer.DiveRoll();
+            mInput.Crouch += () => mPlayer.IsCrouching = !mPlayer.IsCrouching;
         }
 
         private void SelectNextTrap()
@@ -167,7 +163,8 @@ namespace ChainTrapper.GameStates
             };
             rightBody.CreateFixture(rightFixtureDef);
             
-            EnablePhysicsDebugDrawer();
+            if (Globals.Globals.DebugEnabled)
+                EnablePhysicsDebugDrawer();
         }
 
         private void EnablePhysicsDebugDrawer()
@@ -225,6 +222,9 @@ namespace ChainTrapper.GameStates
             mArrowTexture.SetData<Color>(blackPixels);
             
             mPlayer = new Player(PhysicsWorld, new Vector2(100, 100), texture);
+            var duckTexture = new Texture2D(mGraphics.GraphicsDevice, unitSize, unitSize / 2);
+            duckTexture.SetData(redPixels, 0, unitSize * (unitSize / 2));
+            mPlayer.SetDuckTexture(duckTexture);
             mAllGameObjects.Add(mPlayer);
 
             foreach (var wall in mCurrentMap.Walls)
@@ -240,6 +240,20 @@ namespace ChainTrapper.GameStates
                 var oneWall = new Wall(PhysicsWorld, wall.Center.ToVector2(), wallTexture);
                 mDrawables.Add(oneWall);
             }
+            
+            foreach (var wall in mCurrentMap.GrassRects)
+            {
+                var wallTexture = new Texture2D(mGraphics.GraphicsDevice, wall.Width, wall.Height);
+                Color[] grayPixels = new Color[wall.Width * wall.Height];
+                for (int i = 0; i < wall.Width * wall.Height; i++)
+                {
+                    grayPixels[i] = Color.SpringGreen;
+                }
+                wallTexture.SetData<Color>(grayPixels);
+
+                var oneWall = new Grass(PhysicsWorld, wall.Center.ToVector2(), wallTexture);
+                mDrawables.Add(oneWall);
+            }
 
             foreach (var wolfSpawn in mCurrentMap.WolfSpawns)
             {
@@ -250,8 +264,8 @@ namespace ChainTrapper.GameStates
             /*
             for (int i = 0; i < 7; i++)
             {
-                var sheep = new BreadCrumb(PhysicsWorld, mCurrentMap.SheepPath[0], whiteTexture);
-                sheep.Path = mCurrentMap.SheepPath;
+                var sheep = new BreadCrumb(PhysicsWorld, mCurrentMap.EnemyPath[0], whiteTexture);
+                sheep.Path = mCurrentMap.EnemyPath;
                 mAllGameObjects.Add(sheep);
             }
             */
@@ -314,7 +328,8 @@ namespace ChainTrapper.GameStates
             DebugDraw();
             
             // physics
-            Globals.Globals.DebugDrawer.FlushDrawing();
+            if (Globals.Globals.DebugEnabled)
+                Globals.Globals.DebugDrawer.FlushDrawing();
             
             mSpriteBatch.End();
         }

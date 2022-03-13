@@ -7,7 +7,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace ChainTrapper.Traps
 {
-    public class FireTrap : GameObject, IVictimCollisionListener
+    public class FireTrap : GameObject, IGameObjectCollisionListener
     {
         private Texture2D mFireTexture;
 
@@ -25,9 +25,9 @@ namespace ChainTrapper.Traps
             );
         }
 
-        public void OnVictimEntered(GameContext gameContext, GameObject victim)
+        public void OnCollisionBegin(GameContext gameContext, GameObject go)
         {
-            if (victim is Player) return;
+            if (go is Player || go is BreadCrumb) return;
             ShouldBeRemoved = true;
 
             gameContext.QueuedActions.Enqueue(() =>

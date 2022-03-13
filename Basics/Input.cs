@@ -8,6 +8,8 @@ namespace ChainTrapper.Basics
     {
         public event EmptyEvent NextWeapon;
         public event EmptyEvent Fire;
+        public event EmptyEvent Jump;
+        public event EmptyEvent Crouch;
         public event DirectionEvent Movement;
         public event PositionEvent MousePressed;
         public event PositionEvent MouseReleased;
@@ -67,6 +69,16 @@ namespace ChainTrapper.Basics
             if (keyState.IsKeyDown(Keys.Space) && mOldKeyboardState.IsKeyUp(Keys.Space))
             {
                 Fire?.Invoke();
+            }
+            
+            if (keyState.IsKeyDown(Keys.J) && mOldKeyboardState.IsKeyUp(Keys.J))
+            {
+                Jump?.Invoke();
+            }
+            
+            if (keyState.IsKeyDown(Keys.K) && mOldKeyboardState.IsKeyUp(Keys.K))
+            {
+                Crouch?.Invoke();
             }
             
             if (keyState.IsKeyDown(Keys.Delete) && mOldKeyboardState.IsKeyUp(Keys.Delete))

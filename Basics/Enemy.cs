@@ -16,7 +16,7 @@ namespace ChainTrapper.Basics
 {
     public enum EnemyState { Sleeping, Awake, Chasing, Attacking, Pain, Dying, GoHome }
     public enum EnemyType { Predator, Prey }
-    public class Enemy : GameObject, IVictimCollisionListener, IWoundable
+    public class Enemy : GameObject, IGameObjectCollisionListener, IWoundable
     {
         private int mPlayerCollisionDamageDelay = 2;
         private int mReactionDelay = Helper.RandomInt(1, 4);
@@ -32,6 +32,8 @@ namespace ChainTrapper.Basics
         private float mMaxLookAhead;
         private bool mCanSmellBreadCrumbs;
         private EnemyType mEnemyType;
+        private Vec2 mLastStuckPos;
+        private double mStuckTime = 0.0d;
 
         public Enemy(World world, Vector2 drawPosition, Texture2D texture, Player player) : base(world, drawPosition, texture)
         {
@@ -59,7 +61,7 @@ namespace ChainTrapper.Basics
         public override void Draw(SpriteBatch spriteBatch)
         {
             base.Draw(spriteBatch);
-            var wolfDebug = Enum.GetName(typeof(EnemyState), mState);
+            var wolfDebug = Enum.GetName(typeof(EnemyState), mState) + " / Stuck: " + mStuckTime.ToString("0.0");
             spriteBatch.DrawString(Globals.Globals.DefaultFont, mCurrentHealth.ToString(), DrawPosition - (Vector2.UnitY * Constants.PixelPerMeter), Color.White);
             spriteBatch.DrawString(Globals.Globals.DefaultFont, wolfDebug, DrawPosition - (Vector2.UnitY * (Constants.PixelPerMeter * 1.5f)), Color.White);
         }
@@ -73,6 +75,20 @@ namespace ChainTrapper.Basics
             if (mPlayer == null) return;
             
             base.Update(gameTime, gameContext);
+
+            if (IsAtPosition(mLastStuckPos))
+            {
+                mStuckTime += gameTime.ElapsedGameTime.TotalSeconds;
+                if (mStuckTime >= 5.0f && mState == EnemyState.Chasing)
+                {
+                    mState = EnemyState.GoHome;
+                }
+            }
+            else
+            {
+                mStuckTime = 0;
+                mLastStuckPos = Position;
+            }
             
             CheckForPlayerCollisionDamage(gameTime);
             
@@ -110,9 +126,22 @@ namespace ChainTrapper.Basics
             if (!IsAtPosition(mHome))
             {
                 var desiredDirection = (mHome - DrawPosition).ToPhysics();
+                var dist = desiredDirection.Length();
                 desiredDirection.Normalize();
-                var speed = IsBurning ? Speed * mBurnSpeedFactor : Speed;
+                var speed = Speed;
+                if (dist <= 3.0f)
+                {
+                    speed = (dist / 3.0f) * Speed;
+                }
+
+                Vec2 avoidanceForce = LookForward(desiredDirection);
+
+                desiredDirection += avoidanceForce;
                 ApplySteering(desiredDirection * speed);
+            }
+            else
+            {
+                mStuckTime = 0.0f;
             }
         }
 
@@ -141,23 +170,21 @@ namespace ChainTrapper.Basics
             if (IsNextTo(mPlayer))
             {
                 mState = EnemyState.Attacking;
-                mLastKnownPlayerPosition = mPlayer.Body.GetPosition();
+                mLastKnownPlayerPosition = mPlayer.Position;
                 return;
             }
 
             if (CanSeeGameObject(mPlayer))
             {
-                mLastKnownPlayerPosition = mPlayer.Body.GetPosition();
+                mLastKnownPlayerPosition = mPlayer.Position;
             }
             else if (mCanSmellBreadCrumbs)
             {
                 LookForBreadCrumb();
             }
-
-            Globals.Globals.DebugDrawer.DrawCircle(mLastKnownPlayerPosition, 0.3f, new Box2DX.Dynamics.Color(0.4f, 0.4f, 1.0f));
-
-            var desiredDirection = mLastKnownPlayerPosition - mBody.GetPosition();
-
+            
+            var desiredDirection = mLastKnownPlayerPosition - Position;
+            
             if (mEnemyType == EnemyType.Prey)
             {
                 desiredDirection *= -1;
@@ -166,14 +193,18 @@ namespace ChainTrapper.Basics
             var avoidanceForce = LookForward(desiredDirection);
 
             desiredDirection.Normalize();
-            Globals.Globals.DebugDrawer.DrawVectorAsArrow(mBody.GetPosition(), desiredDirection, new Box2DX.Dynamics.Color(0.2f, 0.2f, 1.0f));
-
+            
             desiredDirection += avoidanceForce;
-            Globals.Globals.DebugDrawer.DrawVectorAsArrow(mBody.GetPosition(), avoidanceForce, new Box2DX.Dynamics.Color(0.2f, 0.2f, 1.0f));
-
-            float speed = IsBurning ? Speed * mBurnSpeedFactor : Speed;
-            var desiredVelocity = desiredDirection * speed;
-            Globals.Globals.DebugDrawer.DrawVectorAsArrow(mBody.GetPosition(), desiredVelocity, new Box2DX.Dynamics.Color(0.2f, 1.0f, 0.2f));
+            
+            var desiredVelocity = desiredDirection * Speed;
+         
+            if (Globals.Globals.DebugEnabled)
+            {
+                Globals.Globals.DebugDrawer.DrawVectorAsArrow(Position, desiredDirection, new Box2DX.Dynamics.Color(0.2f, 0.2f, 1.0f));
+                Globals.Globals.DebugDrawer.DrawVectorAsArrow(Position, avoidanceForce, new Box2DX.Dynamics.Color(0.2f, 0.2f, 1.0f));
+                Globals.Globals.DebugDrawer.DrawVectorAsArrow(Position, desiredVelocity, new Box2DX.Dynamics.Color(0.2f, 1.0f, 0.2f));
+                Globals.Globals.DebugDrawer.DrawCircle(mLastKnownPlayerPosition, 0.3f, new Box2DX.Dynamics.Color(0.4f, 0.4f, 1.0f));
+            }
 
             ApplySteering(desiredVelocity);
         }
@@ -183,7 +214,7 @@ namespace ChainTrapper.Basics
             List<BreadCrumb> detectedCrumbs = new List<BreadCrumb>();
             
             Fixture[] fixtures = new Fixture[100];
-            int count = mWorld.Query(mBody.GetPosition(), mBreadCrumbDetectionRadius, fixtures);
+            int count = mWorld.Query(Position, mBreadCrumbDetectionRadius, fixtures);
             
             for (int i = 0; i < count; i++)
             {
@@ -201,10 +232,12 @@ namespace ChainTrapper.Basics
             {
                 detectedCrumbs.Sort((bc1, bc2) => bc2.LifeTimeLeft.CompareTo(bc1.LifeTimeLeft));
                 var mostRecentBreadCrumb = detectedCrumbs[0];
-                var lastKnownPlayerPosition = mostRecentBreadCrumb.Body.GetPosition();
-                Globals.Globals.DebugDrawer.DrawPoint(lastKnownPlayerPosition,
+                var lastKnownPlayerPosition = mostRecentBreadCrumb.Position;
+                if (Globals.Globals.DebugEnabled)
+                    Globals.Globals.DebugDrawer.DrawPoint(lastKnownPlayerPosition,
                     new Box2DX.Dynamics.Color(1.0f, 0.3f, 0.3f));
                 mLastKnownPlayerPosition = lastKnownPlayerPosition;
+                mState = EnemyState.Chasing;
             }
         }
         
@@ -220,7 +253,7 @@ namespace ChainTrapper.Basics
                         if (CanSeeGameObject(mPlayer))
                         {
                             mState = EnemyState.Chasing;
-                            mLastKnownPlayerPosition = mPlayer.Body.GetPosition();
+                            mLastKnownPlayerPosition = mPlayer.Position;
                         }
                         else if (mCanSmellBreadCrumbs)
                         {
@@ -248,34 +281,40 @@ namespace ChainTrapper.Basics
             forward.SetMagnitude(mMaxLookAhead);
             leftSensorDirection.SetMagnitude(mMaxLookAhead);
             rightSensorDirection.SetMagnitude(mMaxLookAhead);
+
+            if (Globals.Globals.DebugEnabled)
+            {
+                Globals.Globals.DebugDrawer.DrawVectorAsArrow(Position, leftSensorDirection,
+                    new Box2DX.Dynamics.Color(1.0f, 1.0f, 1.0f));
+                Globals.Globals.DebugDrawer.DrawVectorAsArrow(Position, rightSensorDirection,
+                    new Box2DX.Dynamics.Color(1.0f, 1.0f, 1.0f));
+                Globals.Globals.DebugDrawer.DrawVectorAsArrow(Position, forward,
+                    new Box2DX.Dynamics.Color(1.0f, 1.0f, 1.0f));
+            }
+
+            var lookAheadEndPoint = Position + forward;
+            var leftEndPoint = Position + leftSensorDirection;
+            var rightEndPoint = Position + rightSensorDirection;
             
-            Globals.Globals.DebugDrawer.DrawVectorAsArrow(mBody.GetPosition(), leftSensorDirection, new Box2DX.Dynamics.Color(1.0f, 1.0f, 1.0f));
-            Globals.Globals.DebugDrawer.DrawVectorAsArrow(mBody.GetPosition(), rightSensorDirection, new Box2DX.Dynamics.Color(1.0f, 1.0f, 1.0f));
-            Globals.Globals.DebugDrawer.DrawVectorAsArrow(mBody.GetPosition(), forward, new Box2DX.Dynamics.Color(1.0f, 1.0f, 1.0f));
-            
-            var lookAheadEndPoint = mBody.GetPosition() + forward;
-            var leftEndPoint = mBody.GetPosition() + leftSensorDirection;
-            var rightEndPoint = mBody.GetPosition() + rightSensorDirection;
-            
-            var fixtures = mWorld.Raycast(mBody.GetPosition(), lookAheadEndPoint);
-            fixtures = fixtures.Concat(mWorld.Raycast(mBody.GetPosition(), leftEndPoint));
-            fixtures = fixtures.Concat(mWorld.Raycast(mBody.GetPosition(), rightEndPoint));
+            var fixtures = mWorld.Raycast(Position, lookAheadEndPoint);
+            fixtures = fixtures.Concat(mWorld.Raycast(Position, leftEndPoint));
+            fixtures = fixtures.Concat(mWorld.Raycast(Position, rightEndPoint));
             
             foreach (var fixture in fixtures)
             {
-                if (fixture == this.mShape) continue;
+                if (fixture == mShape) continue;
                 if (fixture.UserData is Wall || fixture.ShapeType == ShapeType.EdgeShape)
                 {
-                    var nearestPoint = fixture.GetNearestPoint(mBody.GetPosition());
+                    var nearestPoint = fixture.GetNearestPoint(Position);
                     
-                    var curAvoidanceForce = mBody.GetPosition() - nearestPoint;
+                    var curAvoidanceForce = Position - nearestPoint;
                     
                     float dist = curAvoidanceForce.Length();
                     curAvoidanceForce.SetMagnitude(1 / (dist + 1));
                     
                     avoidanceForce += curAvoidanceForce;
-                    
-                    Globals.Globals.DebugDrawer.DrawVectorAsArrow(nearestPoint, curAvoidanceForce,
+                    if (Globals.Globals.DebugEnabled)
+                        Globals.Globals.DebugDrawer.DrawVectorAsArrow(nearestPoint, curAvoidanceForce,
                         new Box2DX.Dynamics.Color(1.0f, 0.2f, 0.2f));
                 }
             }
@@ -283,17 +322,17 @@ namespace ChainTrapper.Basics
             return avoidanceForce;
         }
 
-        public void OnVictimEntered(GameContext gameContext, GameObject victim)
+        public void OnCollisionBegin(GameContext gameContext, GameObject go)
         {
-            if (victim is Player player)
+            if (go is Player player)
             {
                 mCollidingWithPlayer = true;
             }
         }
 
-        public void OnVictimLeft(GameContext gameContext, GameObject victim)
+        public void OnCollisionEnd(GameContext gameContext, GameObject go)
         {
-            if (victim is Player player)
+            if (go is Player player)
             {
                 mCollidingWithPlayer = false;
             }

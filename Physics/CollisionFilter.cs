@@ -24,6 +24,16 @@ namespace ChainTrapper.Physics
             {
                 return false;
             }
+
+            if ((go1 is Player player1))
+            {
+                if (player1.IsRolling && go2 is Enemy) return false;
+            }
+            
+            if ((go2 is Player player2))
+            {
+                if (player2.IsRolling && go1 is Enemy) return false;
+            }
             
             if ((go1 is Player && go2 is Bomb) || (go2 is Player && go1 is Bomb))
             {
