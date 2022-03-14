@@ -14,7 +14,7 @@ using Math = System.Math;
 
 namespace ChainTrapper.Basics
 {
-    public enum EnemyState { Sleeping, Awake, Chasing, Attacking, Pain, Dying, GoHome }
+    public enum EnemyState { Sleeping, Awake, Investigating, Chasing, Attacking, Pain, Dying, GoHome }
     public enum EnemyType { Predator, Prey }
     public class Enemy : GameObject, IGameObjectCollisionListener, IWoundable
     {
@@ -34,14 +34,15 @@ namespace ChainTrapper.Basics
         private EnemyType mEnemyType;
         private Vec2 mLastStuckPos;
         private double mStuckTime = 0.0d;
+        private Vec2 mPointOfInterest;
 
         public Enemy(World world, Vector2 drawPosition, Texture2D texture, Player player) : base(world, drawPosition, texture)
         {
             mPlayer = player;
             mHome = drawPosition;
             mReactionCounter = mReactionDelay;
-            Speed = 28;
-            mBreadCrumbDetectionRadius = 5.0f;
+            MaxSpeed = 28;
+            mBreadCrumbDetectionRadius = 7.0f;
             mMaxLookAhead = 1.0f;
             
             mEnemyType = EnemyType.Predator;
@@ -76,19 +77,7 @@ namespace ChainTrapper.Basics
             
             base.Update(gameTime, gameContext);
 
-            if (IsAtPosition(mLastStuckPos))
-            {
-                mStuckTime += gameTime.ElapsedGameTime.TotalSeconds;
-                if (mStuckTime >= 5.0f && mState == EnemyState.Chasing)
-                {
-                    mState = EnemyState.GoHome;
-                }
-            }
-            else
-            {
-                mStuckTime = 0;
-                mLastStuckPos = Position;
-            }
+            CheckIfStuck(gameTime);
             
             CheckForPlayerCollisionDamage(gameTime);
             
@@ -98,6 +87,7 @@ namespace ChainTrapper.Basics
                     return;
                 case EnemyState.Awake:
                     UpdateReactionCounter(gameTime, gameContext);
+                    mStuckTime = 0;
                     break;
                 case EnemyState.Chasing:
                     ChasePlayer();
@@ -109,6 +99,30 @@ namespace ChainTrapper.Basics
                     GoHome();
                     UpdateReactionCounter(gameTime, gameContext);
                     break;
+                case EnemyState.Investigating:
+                    Investigate();
+                    break;
+            }
+        }
+
+        private void CheckIfStuck(GameTime gameTime)
+        {
+            if (IsAtPosition(mLastStuckPos))
+            {
+                mStuckTime += gameTime.ElapsedGameTime.TotalSeconds;
+                if (mStuckTime >= 5.0f && mState == EnemyState.Chasing)
+                {
+                    mState = EnemyState.GoHome;
+                }
+                else if (mStuckTime >= 10.0f && mState == EnemyState.GoHome)
+                {
+                    mState = EnemyState.Awake;
+                }
+            }
+            else
+            {
+                mStuckTime = 0;
+                mLastStuckPos = Position;
             }
         }
 
@@ -128,10 +142,10 @@ namespace ChainTrapper.Basics
                 var desiredDirection = (mHome - DrawPosition).ToPhysics();
                 var dist = desiredDirection.Length();
                 desiredDirection.Normalize();
-                var speed = Speed;
+                var speed = MaxSpeed;
                 if (dist <= 3.0f)
                 {
-                    speed = (dist / 3.0f) * Speed;
+                    speed = (dist / 3.0f) * MaxSpeed;
                 }
 
                 Vec2 avoidanceForce = LookForward(desiredDirection);
@@ -145,7 +159,7 @@ namespace ChainTrapper.Basics
             }
         }
 
-        private void AttackPlayer()
+        private void TryAttackPlayer()
         {
             if (mPlayer != null && !mPlayer.IsDead && IsNextTo(mPlayer))
             {
@@ -158,12 +172,46 @@ namespace ChainTrapper.Basics
             }
         }
 
+        private void Investigate()
+        {
+            if (CanSeeGameObject(mPlayer))
+            {
+                mLastKnownPlayerPosition = mPlayer.Position;
+                mState = EnemyState.Chasing;
+                return;
+            }
+
+            if (IsAtPosition(mPointOfInterest))
+            {
+                mState = EnemyState.Awake;
+                return;
+            }
+            
+            var desiredDirection = mPointOfInterest - Position;
+            var dist = desiredDirection.Length();
+            
+            var speed = MaxSpeed * 0.4f;
+            if (dist <= 3.0f)
+            {
+                speed = (dist / 3.0f) * speed;
+            }
+            
+            var avoidanceForce = LookForward(desiredDirection);
+
+            desiredDirection.Normalize();
+            
+            desiredDirection += avoidanceForce;
+            
+            var desiredVelocity = desiredDirection * speed;
+            
+            ApplySteering(desiredVelocity);
+        }
+
         private void ChasePlayer()
         {
             if (mPlayer == null || mPlayer.IsDead)
             {
-                mPlayer = null;
-                mState = EnemyState.Awake;
+                mState = EnemyState.GoHome;
                 return;
             }
 
@@ -174,14 +222,7 @@ namespace ChainTrapper.Basics
                 return;
             }
 
-            if (CanSeeGameObject(mPlayer))
-            {
-                mLastKnownPlayerPosition = mPlayer.Position;
-            }
-            else if (mCanSmellBreadCrumbs)
-            {
-                LookForBreadCrumb();
-            }
+            TryDetectPlayer();
             
             var desiredDirection = mLastKnownPlayerPosition - Position;
             
@@ -196,7 +237,7 @@ namespace ChainTrapper.Basics
             
             desiredDirection += avoidanceForce;
             
-            var desiredVelocity = desiredDirection * Speed;
+            var desiredVelocity = desiredDirection * MaxSpeed;
          
             if (Globals.Globals.DebugEnabled)
             {
@@ -209,7 +250,7 @@ namespace ChainTrapper.Basics
             ApplySteering(desiredVelocity);
         }
 
-        private void LookForBreadCrumb()
+        private bool LookForBreadCrumb()
         {
             List<BreadCrumb> detectedCrumbs = new List<BreadCrumb>();
             
@@ -238,7 +279,10 @@ namespace ChainTrapper.Basics
                     new Box2DX.Dynamics.Color(1.0f, 0.3f, 0.3f));
                 mLastKnownPlayerPosition = lastKnownPlayerPosition;
                 mState = EnemyState.Chasing;
+                return true;
             }
+
+            return false;
         }
         
         private void UpdateReactionCounter(GameTime gameTime, GameContext gameContext)
@@ -248,25 +292,34 @@ namespace ChainTrapper.Basics
                 mReactionCounter -= gameTime.ElapsedGameTime.TotalSeconds;
                 if (mReactionCounter <= 0.0f)
                 {
-                    if (mState == EnemyState.Awake || mState == EnemyState.GoHome)
+                    if (mState == EnemyState.Attacking)
                     {
-                        if (CanSeeGameObject(mPlayer))
-                        {
-                            mState = EnemyState.Chasing;
-                            mLastKnownPlayerPosition = mPlayer.Position;
-                        }
-                        else if (mCanSmellBreadCrumbs)
-                        {
-                            LookForBreadCrumb();
-                        }
+                        TryAttackPlayer();
                     }
-                    else if (mState == EnemyState.Attacking)
+                    else
                     {
-                        AttackPlayer();
+                        TryDetectPlayer();
                     }
+
                     mReactionCounter = mReactionDelay;
                 }
             }
+        }
+
+        private bool TryDetectPlayer()
+        {
+            if (CanSeeGameObject(mPlayer))
+            {
+                mState = EnemyState.Chasing;
+                mLastKnownPlayerPosition = mPlayer.Position;
+                return true;
+            }
+            else if (mCanSmellBreadCrumbs && mLastKnownPlayerPosition != Vec2.Zero)
+            {
+                return LookForBreadCrumb();
+            }
+
+            return false;
         }
 
         private Vec2 LookForward(Vec2 forward)
@@ -347,6 +400,15 @@ namespace ChainTrapper.Basics
 
         public bool IsDead => mCurrentHealth <= 0;
         public int CurrentHealth => mCurrentHealth;
+
+        public void SetPointOfInterest(Vec2 position)
+        {
+            mPointOfInterest = position;
+            if (mState == EnemyState.GoHome || mState == EnemyState.Awake)
+            {
+                mState = EnemyState.Investigating;
+            }
+        }
     }
 
 }

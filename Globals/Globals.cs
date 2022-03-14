@@ -11,6 +11,6 @@ namespace ChainTrapper.Globals
         public static int CurrentLevelScore { get; set; }
         public static DebugDrawer DebugDrawer { get; set; }
 
-        public static bool DebugEnabled = false;
+        public static bool DebugEnabled = true;
     }
 }

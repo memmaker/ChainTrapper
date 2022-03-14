@@ -51,13 +51,13 @@ namespace ChainTrapper.Physics
                 listener2.OnCollisionBegin(mGameContext, (GameObject)go1);
             }
 
-            if (go1 is Projectile && !(go2 is Player))
+            if (go1 is Throwable && !(go2 is Player))
             {
                 var go = (GameObject)go1;
                 go.Destroy();
             }
 
-            if (go2 is Projectile && !(go1 is Player))
+            if (go2 is Throwable && !(go1 is Player))
             {
                 var go = (GameObject)go2;
                 go.Destroy();
@@ -78,12 +78,12 @@ namespace ChainTrapper.Physics
                 go2 = contact.FixtureB.Body.GetUserData();
             }
             
-            if (go1 is IGameObjectCollisionListener listener1 && (go2 is Enemy || go2 is BreadCrumb || go2 is Player))
+            if (go1 is IGameObjectCollisionListener listener1 && (go2 is Enemy || go2 is Player))
             {
                 listener1.OnCollisionEnd(mGameContext, (GameObject)go2);
             }
             
-            if (go2 is IGameObjectCollisionListener listener2 && (go1 is Enemy || go1 is BreadCrumb || go1 is Player))
+            if (go2 is IGameObjectCollisionListener listener2 && (go1 is Enemy || go1 is Player))
             {
                 listener2.OnCollisionEnd(mGameContext, (GameObject)go1);
             }

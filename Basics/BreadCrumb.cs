@@ -35,7 +35,7 @@ namespace ChainTrapper
         public override void Draw(SpriteBatch spriteBatch)
         {
             if (!Globals.Globals.DebugEnabled) return;
-            base.Draw(spriteBatch);
+            //base.Draw(spriteBatch);
             spriteBatch.DrawString(Globals.Globals.DefaultFont, LifeTimeLeft.ToString("0.0"), DrawPosition - (Vector2.UnitY * Constants.PixelPerMeter), Color.White);
         }
 

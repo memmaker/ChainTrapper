@@ -24,7 +24,7 @@ namespace ChainTrapper
         protected Texture2D mSprite;
         public Vector2 DrawPosition { get; set; }
         public Vec2 Position => mBody.GetPosition();
-        public float Speed { get; set; }
+        public float MaxSpeed { get; set; }
         public bool ShouldBeRemoved { get; set; }
         public float Rotation => mBody.GetAngle();
         public Vec2 Velocity => mBody.GetLinearVelocity();
@@ -45,7 +45,7 @@ namespace ChainTrapper
         public GameObject(World world, Vector2 drawPosition, Texture2D texture)
         {
             ShouldBeRemoved = false;
-            Speed = 3;
+            MaxSpeed = 3;
             DrawPosition = drawPosition;
             mSprite = texture;
             mWorld = world;

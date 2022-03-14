@@ -66,7 +66,10 @@ namespace ChainTrapper.Basics
 
         public void OnCollisionEnd(GameContext gameContext, GameObject go)
         {
-            go.SetGrass(null);
+            if (go.Grass == this)
+            {
+                go.SetGrass(null);
+            }
             Occupants.Remove(go);
         }
     }

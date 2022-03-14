@@ -119,7 +119,7 @@ namespace ChainTrapper
         public void MovePlayer(Vec2 direction)
         {
             if (IsDead || IsRolling) return;
-            var speed = IsCrouching ? Speed * 0.25f : Speed;
+            var speed = IsCrouching ? MaxSpeed * 0.25f : MaxSpeed;
             direction.SetMagnitude(speed);
             ApplyForce(direction);
         }
@@ -128,7 +128,7 @@ namespace ChainTrapper
         {
             if (IsDead || IsRolling) return;
             mRollDirection = this.Velocity;
-            mRollDirection.SetMagnitude(Speed * 9f);
+            mRollDirection.SetMagnitude(MaxSpeed * 9f);
             ApplyForce(mRollDirection);
             IsRolling = true;
         }

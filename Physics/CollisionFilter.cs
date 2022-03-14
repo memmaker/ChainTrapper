@@ -20,7 +20,12 @@ namespace ChainTrapper.Physics
                 go2 = fixtureB.Body.GetUserData();
             }
 
-            if ((go1 is Player && go2 is Projectile) || (go2 is Player && go1 is Projectile))
+            if (go1 is Throwable throw1 && !throw1.IsAbleToCollide)
+            {
+                return false;
+            }
+            
+            if (go2 is Throwable throw2 && !throw2.IsAbleToCollide)
             {
                 return false;
             }

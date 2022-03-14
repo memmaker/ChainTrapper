@@ -32,8 +32,8 @@ namespace ChainTrapper
             {
                 Graphics.ApplyChanges();
             }
-            Graphics.PreferredBackBufferWidth = 1440 / 2;
-            Graphics.PreferredBackBufferHeight = 900 / 2;
+            Graphics.PreferredBackBufferWidth = 2600 / 2;
+            Graphics.PreferredBackBufferHeight = 1600 / 2;
             
             // This should set the resolution to the desktop resolution
             //Graphics.PreferredBackBufferWidth = GraphicsDevice.Adapter.CurrentDisplayMode.Width;

@@ -17,7 +17,7 @@ using IDrawable = ChainTrapper.Traits.IDrawable;
 
 namespace ChainTrapper.GameStates
 {
-    public enum TrapType { FireTrap, SpikedHole, ExplodingBarrel }
+    public enum TrapType { FireTrap, SpikedHole, BombTrap }
     public class MainGameState : IGameState
     {
         private GameContext mGameContext = new GameContext();
@@ -70,6 +70,14 @@ namespace ChainTrapper.GameStates
             mInput.Movement += direction => mPlayer.MovePlayer(direction);
             mInput.Jump += () => mPlayer.DiveRoll();
             mInput.Crouch += () => mPlayer.IsCrouching = !mPlayer.IsCrouching;
+            mInput.MousePressed += OnMousePressed;
+        }
+
+        private void OnMousePressed(Vector2 position)
+        {
+            var stone = new Throwable(PhysicsWorld, mPlayer.DrawPosition, mTrapTexture);
+            stone.SetTarget(position.ToPhysics());
+            mAllGameObjects.Add(stone);
         }
 
         private void SelectNextTrap()
@@ -84,8 +92,8 @@ namespace ChainTrapper.GameStates
             GameObject trap = null;
             switch (mSelectedTraps)
             {
-                case TrapType.ExplodingBarrel:
-                    trap = new TimedBomb(PhysicsWorld, mPlayer.DrawPosition, mTrapTexture);
+                case TrapType.BombTrap:
+                    trap = new BombTrap(PhysicsWorld, mPlayer.DrawPosition, mTrapTexture);
                     break;
                 case TrapType.FireTrap:
                     trap = new FireTrap(PhysicsWorld, mPlayer.DrawPosition, mTrapTexture, mTrapTexture);
