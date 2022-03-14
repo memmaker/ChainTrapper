@@ -269,6 +269,15 @@ namespace ChainTrapper.GameStates
                 mWolves.Add(enemy);
                 mAllGameObjects.Add(enemy);
             }
+
+            if (mCurrentMap.EnemyPath != null && mCurrentMap.EnemyPath.Count > 0)
+            {
+                var path = mCurrentMap.EnemyPath;
+                var enemy = new Enemy(PhysicsWorld, path[0], blueTexture, mPlayer);
+                enemy.SetPath(path);
+                mWolves.Add(enemy);
+                mAllGameObjects.Add(enemy);
+            }
             /*
             for (int i = 0; i < 7; i++)
             {

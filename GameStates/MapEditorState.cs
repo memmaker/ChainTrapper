@@ -330,7 +330,7 @@ namespace ChainTrapper.GameStates
 
         private void OnMouseMoved(Vector2 position)
         {
-            if (mObjectType == ObjectTypes.Walls)
+            if (mDrawRubberRect)
             {
                 mRectCorner2 = position;
             }

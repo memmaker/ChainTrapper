@@ -35,13 +35,15 @@ namespace ChainTrapper.Basics
         private Vec2 mLastStuckPos;
         private double mStuckTime = 0.0d;
         private Vec2 mPointOfInterest;
+        private List<Vec2> mPath;
+        private int mCurrentPathIndex;
 
         public Enemy(World world, Vector2 drawPosition, Texture2D texture, Player player) : base(world, drawPosition, texture)
         {
             mPlayer = player;
             mHome = drawPosition;
             mReactionCounter = mReactionDelay;
-            MaxSpeed = 28;
+            MaxSpeed = 88;
             mBreadCrumbDetectionRadius = 7.0f;
             mMaxLookAhead = 1.0f;
             
@@ -57,6 +59,12 @@ namespace ChainTrapper.Basics
                 false, 
                 false
             );
+        }
+
+        public void SetPath(List<Vector2> path)
+        {
+            mPath = path.ConvertAll(vec => vec.ToPhysics());
+            mCurrentPathIndex = 0;
         }
 
         public override void Draw(SpriteBatch spriteBatch)
@@ -137,15 +145,20 @@ namespace ChainTrapper.Basics
 
         private void GoHome()
         {
-            if (!IsAtPosition(mHome))
+            var homeDestination = mHome.ToPhysics();
+            if (HasPath)
             {
-                var desiredDirection = (mHome - DrawPosition).ToPhysics();
+                homeDestination = mPath[mCurrentPathIndex];
+            }
+            if (!IsAtPosition(homeDestination))
+            {
+                var desiredDirection = (homeDestination - Position);
                 var dist = desiredDirection.Length();
                 desiredDirection.Normalize();
-                var speed = MaxSpeed;
+                var speed = MaxSpeed * 0.3f;
                 if (dist <= 3.0f)
                 {
-                    speed = (dist / 3.0f) * MaxSpeed;
+                    speed = (dist / 3.0f) * speed;
                 }
 
                 Vec2 avoidanceForce = LookForward(desiredDirection);
@@ -156,20 +169,22 @@ namespace ChainTrapper.Basics
             else
             {
                 mStuckTime = 0.0f;
+                if (HasPath)
+                {
+                    mCurrentPathIndex = (mCurrentPathIndex + 1) % mPath.Count;
+                }
             }
         }
+
+        private bool HasPath => mPath != null && mPath.Count > 0;
 
         private void TryAttackPlayer()
         {
             if (mPlayer != null && !mPlayer.IsDead && IsNextTo(mPlayer))
             {
                 mPlayer.TakeDamage(1);
-                mState = EnemyState.Chasing;
             }
-            else 
-            {
-                mState = EnemyState.Awake;
-            }
+            mState = EnemyState.Chasing;
         }
 
         private void Investigate()
@@ -214,14 +229,14 @@ namespace ChainTrapper.Basics
                 mState = EnemyState.GoHome;
                 return;
             }
-
+            /*
             if (IsNextTo(mPlayer))
             {
                 mState = EnemyState.Attacking;
                 mLastKnownPlayerPosition = mPlayer.Position;
                 return;
             }
-
+            */
             TryDetectPlayer();
             
             var desiredDirection = mLastKnownPlayerPosition - Position;
@@ -262,7 +277,7 @@ namespace ChainTrapper.Basics
                 var fixture = fixtures[i];
                 if (fixture.UserData is BreadCrumb breadCrumb)
                 {
-                    if (CanSeeGameObject(breadCrumb))
+                    if (CanSeeGameObject(breadCrumb, false))
                     {
                         detectedCrumbs.Add(breadCrumb);
                     }

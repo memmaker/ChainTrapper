@@ -60,5 +60,24 @@ namespace ChainTrapper.Globals
             var angle = Math.Atan2(vec.Y, vec.X);
             return angle;
         }
+        
+        public static Vec2 RotationToDirectionVector(float rotationInRadians)
+        {
+            return new Vec2((float) Math.Cos(rotationInRadians), (float) Math.Sin(rotationInRadians));
+        }
+        public static float RadianAngleBetween2DVectors(Vec2 from, Vec2 to)
+        {
+            return (float)(Math.Atan2(to.Y, to.X) - Math.Atan2(from.Y, from.X));
+        }
+        public static bool IsInViewCone(Vec2 sourcePos, Vec2 targetPos, Vec2 lookDirection, float fovInDegrees)
+        {
+            Vec2 dirToTarget = targetPos - sourcePos;
+            Vec2 dirToLook = lookDirection;
+            double angleBetween = Math.Abs(RadianAngleBetween2DVectors(dirToTarget, dirToLook));
+
+            if (angleBetween > Math.PI)
+                angleBetween = Math.Abs((2 * Math.PI) - angleBetween);
+            return angleBetween < (MathHelper.ToRadians(fovInDegrees) / 2);
+        }
     }
 }

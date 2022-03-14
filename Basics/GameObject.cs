@@ -41,11 +41,13 @@ namespace ChainTrapper
         private double mBurnTimer = 3.0d;
         protected float mBurnSpeedFactor = 0.7f;
         private Grass mGrass;
+        private float mFieldOfView;
 
         public GameObject(World world, Vector2 drawPosition, Texture2D texture)
         {
             ShouldBeRemoved = false;
             MaxSpeed = 3;
+            mFieldOfView = 60.0f;
             DrawPosition = drawPosition;
             mSprite = texture;
             mWorld = world;
@@ -179,8 +181,16 @@ namespace ChainTrapper
             mBody.ApplyForce(steeringForce, mBody.GetWorldCenter());
         }
 
-        protected bool CanSeeGameObject(GameObject go)
+        protected bool CanSeeGameObject(GameObject go, bool useViewCone = true)
         {
+            var forward = Helper.RotationToDirectionVector(mBody.GetAngle());
+
+            if (useViewCone)
+            {
+                bool inViewCone = Helper.IsInViewCone(Position, go.Position, forward, mFieldOfView);
+                if (!inViewCone) return false;
+            }
+
             var hitFixtures = mWorld.Raycast(DrawPosition, go.DrawPosition);
 
             foreach (var hitFixture in hitFixtures)
